@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini 3D Creations | Professional 3D Printing Services</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#ec4899',
+                        accent: '#06b6d4',
+                        dark: '#0f172a',
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #ec4899 50%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .mesh-gradient {
+            background-color: #0f172a;
+            background-image:
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.3);
+        }
+        .print-layer {
+            animation: printLayer 2s ease-in-out infinite;
+        }
+        @keyframes printLayer {
+            0% { height: 0%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { height: 100%; opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white font-sans antialiased overflow-x-hidden">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass-dark border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                        <i data-lucide="box" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-tight">Mini 3D<span class="text-accent">Creations</span></span>
+                </div>
+
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#home" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Home</a>
+                    <a href="#services" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Services</a>
+                    <a href="#portfolio" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Portfolio</a>
+                    <a href="#process" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Process</a>
+                    <a href="#quote" class="px-5 py-2.5 bg-gradient-to-r from-primary to-secondary rounded-full text-sm font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-primary/25">
+                        Get Quote
+                    </a>
+                </div>
+
+                <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden glass-dark border-t border-white/10">
+            <div class="px-4 pt-2 pb-6 space-y-1">
+                <a href="#home" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10">Home</a>
+                <a href="#services" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10">Services</a>
+                <a href="#portfolio" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10">Portfolio</a>
+                <a href="#process" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10">Process</a>
+                <a href="#quote" class="block px-3 py-2 mt-4 text-center rounded-md bg-gradient-to-r from-primary to-secondary text-white font-semibold">Get Quote</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="relative min-h-screen flex items-center pt-20 overflow-hidden mesh-gradient">
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute -top-40 -right-40 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse-slow"></div>
+            <div class="absolute top-40 -left-20 w-72 h-72 bg-secondary/20 rounded-full blur-3xl animate-pulse-slow" style="animation-delay: 2s;"></div>
+            <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-accent/10 rounded-full blur-3xl animate-pulse-slow" style="animation-delay: 4s;"></div>
+        </div>
+
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="space-y-8 animate-fade-in">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm font-medium text-accent border border-accent/20">
+                        <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+                        Now accepting custom orders
+                    </div>
+
+                    <h1 class="text-5xl md:text-7xl font-bold leading-tight">
+                        Bring Your Ideas to <span class="gradient-text">3D Reality</span>
+                    </h1>
+
+                    <p class="text-xl text-gray-400 max-w-lg leading-relaxed">
+                        Professional 3D printing services for prototypes, custom models, miniatures, and production parts. High quality, fast turnaround, affordable prices.
+                    </p>
+
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#quote" class="px-8 py-4 bg-gradient-to-r from-primary to-secondary rounded-full font-semibold text-lg hover:shadow-lg hover:shadow-primary/30 transition-all transform hover:-translate-y-1">
+                            Start Your Project
+                        </a>
+                        <a href="#portfolio" class="px-8 py-4 glass rounded-full font-semibold text-lg hover:bg-white/10 transition-all flex items-center gap-2">
+                            <i data-lucide="play-circle" class="w-5 h-5"></i>
+                            View Work
+                        </a>
+                    </div>
+
+                    <div class="flex items-center gap-8 pt-4">
+                        <div>
+                            <div class="text-3xl font-bold text-white">500+</div>
+                            <div class="text-sm text-gray-400">Projects Done</div>
+                        </div>
+                        <div class="w-px h-12 bg-white/20"></div>
+                        <div>
+                            <div class="text-3xl font-bold text-white">24h</div>
+                            <div class="text-sm text-gray-400">Fast Delivery</div>
+                        </div>
+                        <div class="w-px h-12 bg-white/20"></div>
+                        <div>
+                            <div class="text-3xl font-bold text-white">99%</div>
+                            <div class="text-sm text-gray-400">Success Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative lg:h-[600px] flex items-center justify-center">
+                    <div class="relative w-full max-w-md aspect-square animate-float">
+                        <div class="absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary/30 rounded-3xl blur-2xl"></div>
+                        <img src="images/my-printer.jpg" alt="3D Printer" class="relative w-full h-full object-cover rounded-3xl shadow-2xl border border-white/10">
+
+                        <!-- Floating Cards -->
+                        <div class="absolute -bottom-6 -left-6 glass p-4 rounded-2xl border border-white/20 shadow-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                                    <i data-lucide="check" class="w-5 h-5 text-green-400"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold">Print Complete</div>
+                                    <div class="text-xs text-gray-400">Dragon Miniature</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="absolute -top-6 -right-6 glass p-4 rounded-2xl border border-white/20 shadow-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center animate-spin-slow">
+                                    <i data-lucide="settings" class="w-5 h-5 text-accent"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold">Printing Now</div>
+                                    <div class="text-xs text-gray-400">Layer 245/300</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent"></div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="py-24 bg-slate-900 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">Our <span class="gradient-text">Services</span></h2>
+                <p class="text-gray-400 text-lg max-w-2xl mx-auto">From rapid prototyping to final production, we offer comprehensive 3D printing solutions tailored to your needs.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="glass rounded-2xl p-8 card-hover border border-white/5">
+                    <div class="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center mb-6">
+                        <i data-lucide="zap" class="w-7 h-7 text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Rapid Prototyping</h3>
+                    <p class="text-gray-400 leading-relaxed">Fast turnaround prototypes for product testing and validation. Perfect for iterative design processes.</p>
+                </div>
+
+                <div class="glass rounded-2xl p-8 card-hover border border-white/5">
+                    <div class="w-14 h-14 rounded-xl bg-secondary/20 flex items-center justify-center mb-6">
+                        <i data-lucide="users" class="w-7 h-7 text-secondary"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Custom Miniatures</h3>
+                    <p class="text-gray-400 leading-relaxed">High-detail miniatures for tabletop gaming, collectibles, and architectural models with fine surface finish.</p>
+                </div>
+
+                <div class="glass rounded-2xl p-8 card-hover border border-white/5">
+                    <div class="w-14 h-14 rounded-xl bg-accent/20 flex items-center justify-center mb-6">
+                        <i data-lucide="cpu" class="w-7 h-7 text-accent"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Functional Parts</h3>
+                    <p class="text-gray-400 leading-relaxed">End-use production parts with engineering-grade materials like ABS, PETG, and Nylon.</p>
+                </div>
+
+                <div class="glass rounded-2xl p-8 card-hover border border-white/5">
+                    <div class="w-14 h-14 rounded-xl bg-purple-500/20 flex items-center justify-center mb-6">
+                        <i data-lucide="scan" class="w-7 h-7 text-purple-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">3D Scanning</h3>
+                    <p class="text-gray-400 leading-relaxed">Professional 3D scanning services to digitize physical objects for replication or modification.</p>
+                </div>
+
+                <div class="glass rounded-2xl p-8 card-hover border border-white/5">
+                    <div class="w-14 h-14 rounded-xl bg-orange-500/20 flex items-center justify-center mb-6">
+                        <i data-lucide="paintbrush" class="w-7 h-7 text-orange-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Post-Processing</h3>
+                    <p class="text-gray-400 leading-relaxed">Sanding, painting, and finishing services to give your prints a professional, retail-ready appearance.</p>
+                </div>
+
+                <div class="glass rounded-2xl p-8 card-hover border border-white/5">
+                    <div class="w-14 h-14 rounded-xl bg-green-500/20 flex items-center justify-center mb-6">
+                        <i data-lucide="file-code" class="w-7 h-7 text-green-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">3D Modeling</h3>
+                    <p class="text-gray-400 leading-relaxed">Don't have a 3D file? Our designers can create custom models from your sketches or ideas.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Section -->
+    <section id="process" class="py-24 bg-slate-800/50 relative overflow-hidden">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%236366f1%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">How It <span class="gradient-text">Works</span></h2>
+                <p class="text-gray-400 text-lg max-w-2xl mx-auto">Simple 4-step process from idea to physical object</p>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="relative">
+                    <div class="glass rounded-2xl p-6 text-center border border-white/5 relative z-10">
+                        <div class="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4 text-primary text-2xl font-bold border border-primary/30">1</div>
+                        <h3 class="text-lg font-bold mb-2">Upload Design</h3>
+                        <p class="text-sm text-gray-400">Send us your STL, OBJ, or 3MF files, or describe your idea</p>
+                    </div>
+                    <div class="hidden md:block absolute top-1/2 left-full w-full h-0.5 bg-gradient-to-r from-primary/50 to-transparent -translate-y-1/2"></div>
+                </div>
+
+                <div class="relative">
+                    <div class="glass rounded-2xl p-6 text-center border border-white/5 relative z-10">
+                        <div class="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center mx-auto mb-4 text-secondary text-2xl font-bold border border-secondary/30">2</div>
+                        <h3 class="text-lg font-bold mb-2">Get Quote</h3>
+                        <p class="text-sm text-gray-400">Receive instant pricing based on material, size, and complexity</p>
+                    </div>
+                    <div class="hidden md:block absolute top-1/2 left-full w-full h-0.5 bg-gradient-to-r from-secondary/50 to-transparent -translate-y-1/2"></div>
+                </div>
+
+                <div class="relative">
+                    <div class="glass rounded-2xl p-6 text-center border border-white/5 relative z-10">
+                        <div class="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-4 text-accent text-2xl font-bold border border-accent/30">3</div>
+                        <h3 class="text-lg font-bold mb-2">We Print</h3>
+                        <p class="text-sm text-gray-400">Our experts 3D print your model with precision and care</p>
+                    </div>
+                    <div class="hidden md:block absolute top-1/2 left-full w-full h-0.5 bg-gradient-to-r from-accent/50 to-transparent -translate-y-1/2"></div>
+                </div>
+
+                <div class="relative">
+                    <div class="glass rounded-2xl p-6 text-center border border-white/5 relative z-10">
+                        <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4 text-green-400 text-2xl font-bold border border-green-500/30">4</div>
+                        <h3 class="text-lg font-bold mb-2">Receive</h3>
+                        <p class="text-sm text-gray-400">Get your finished print delivered to your door, anywhere</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="py-24 bg-slate-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-12">
+                <div>
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">Recent <span class="gradient-text">Creations</span></h2>
+                    <p class="text-gray-400 text-lg">Explore our latest 3D printing projects</p>
+                </div>
+
+                <div class="flex gap-2 mt-6 md:mt-0 overflow-x-auto pb-2">
+                    <button class="filter-btn active px-4 py-2 rounded-full text-sm font-medium bg-primary text-white transition-all" data-filter="all">All</button>
+                    <button class="filter-btn px-4 py-2 rounded-full text-sm font-medium glass text-gray-300 hover:text-white transition-all" data-filter="miniatures">Miniatures</button>
+                    <button class="filter-btn px-4 py-2 rounded-full text-sm font-medium glass text-gray-300 hover:text-white transition-all" data-filter="functional">Functional</button>
+                    <button class="filter-btn px-4 py-2 rounded-full text-sm font-medium glass text-gray-300 hover:text-white transition-all" data-filter="art">Art</button>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="portfolio-grid">
+                <div class="portfolio-item group relative overflow-hidden rounded-2xl cursor-pointer" data-category="miniatures">
+                    <img src="https://static.photos/technology/640x480/1" alt="Dragon Miniature" class="w-full h-72 object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                        <span class="text-accent text-sm font-semibold mb-1">Miniatures</span>
+                        <h3 class="text-xl font-bold">Ancient Dragon</h3>
+                        <p class="text-gray-300 text-sm mt-1">High-detail resin print, hand-painted</p>
+                    </div>
+                </div>
+
+                <div class="portfolio-item group relative overflow-hidden rounded-2xl cursor-pointer" data-category="functional">
+                    <img src="https://static.photos/technology/640x480/2" alt="Phone Stand" class="w-full h-72 object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                        <span class="text-accent text-sm font-semibold mb-1">Functional</span>
+                        <h3 class="text-xl font-bold">Ergonomic Phone Stand</h3>
+                        <p class="text-gray-300 text-sm mt-1">PETG, adjustable angle</p>
+                    </div>
+                </div>
+
+                <div class="portfolio-item group relative overflow-hidden rounded-2xl cursor-pointer" data-category="art">
+                    <img src="https://static.photos/technology/640x480/3" alt="Abstract Sculpture" class="w-full h-72 object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                        <span class="text-accent text-sm font-semibold mb-1">Art</span>
+                        <h3 class="text-xl font-bold">Geometric Vase</h3>
+                        <p class="text-gray-300 text-sm mt-1">PLA Silk, dual-color</p>
+                    </div>
+                </div>
+
+                <div class="portfolio-item group relative overflow-hidden rounded-2xl cursor-pointer" data-category="functional">
+                    <img src="https://static.photos/technology/640x480/4" alt="Drone Part" class="w-full h-72 object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                        <span class="text-accent text-sm font-semibold mb-1">Functional</span>
+                        <h3 class="text-xl font-bold">Drone Mount</h3>
+                        <p class="text-gray-300 text-sm mt-1">ABS, lightweight and durable</p>
+                    </div>
+                </div>
+
+                <div class="portfolio-item group relative overflow-hidden rounded-2xl cursor-pointer" data-category="miniatures">
+                    <img src="https://static.photos/technology/640x480/5" alt="Character Figurine" class="w-full h-72 object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                        <span class="text-accent text-sm font-semibold mb-1">Miniatures</span>
+                        <h3 class="text-xl font-bold">RPG Character Set</h3>
+                        <p class="text-gray-300 text-sm mt-1">28mm scale, batch printed</p>
+                    </div>
+                </div>
+
+                <div class="portfolio-item group relative overflow-hidden rounded-2xl cursor-pointer" data-category="art">
+                    <img src="https://static.photos/technology/640x480/6" alt="Lamp Shade" class="w-full h-72 object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                        <span class="text-accent text-sm font-semibold mb-1">Art</span>
+                        <h3 class="text-xl font-bold">Parametric Lamp</h3>
+                        <p class="text-gray-300 text-sm mt-1">Transparent PLA, LED compatible</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-12">
+                <button class="px-8 py-3 glass rounded-full font-semibold hover:bg-white/10 transition-all inline-flex items-center gap-2">
+                    View All Projects
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Materials Section -->
+    <section class="py-24 bg-slate-800/30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">Materials & <span class="gradient-text">Technologies</span></h2>
+                <p class="text-gray-400 text-lg">We work with a wide range of materials to suit your specific needs</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="glass p-6 rounded-xl border border-white/5 hover:border-primary/50 transition-colors">
+                    <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center mb-4">
+                        <i data-lucide="layers" class="w-6 h-6 text-blue-400"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">PLA</h3>
+                    <p class="text-sm text-gray-400">Eco-friendly, easy to print, great for prototypes and decorative items.</p>
+                </div>
+
+                <div class="glass p-6 rounded-xl border border-white/5 hover:border-secondary/50 transition-colors">
+                    <div class="w-12 h-12 rounded-lg bg-orange-500/20 flex items-center justify-center mb-4">
+                        <i data-lucide="shield" class="w-6 h-6 text-orange-400"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">ABS</h3>
+                    <p class="text-sm text-gray-400">Durable and heat resistant. Ideal for functional parts and automotive.</p>
+                </div>
+
+                <div class="glass p-6 rounded-xl border border-white/5 hover:border-accent/50 transition-colors">
+                    <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center mb-4">
+                        <i data-lucide="recycle" class="w-6 h-6 text-green-400"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">PETG</h3>
+                    <p class="text-sm text-gray-400">Strong like ABS, easy like PLA. Food safe and chemical resistant.</p>
+                </div>
+
+                <div class="glass p-6 rounded-xl border border-white/5 hover:border-purple-500/50 transition-colors">
+                    <div class="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-4">
+                        <i data-lucide="gem" class="w-6 h-6 text-purple-400"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Resin</h3>
+                    <p class="text-sm text-gray-400">Ultra-high detail for miniatures and jewelry. Smooth surface finish.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quote Section (UPDATED: Netlify Forms + real file input) -->
+    <section id="quote" class="py-24 bg-slate-900 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent"></div>
+
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="glass rounded-3xl p-8 md:p-12 border border-white/10 shadow-2xl">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">Get an <span class="gradient-text">Instant Quote</span></h2>
+                    <p class="text-gray-400">Upload your 3D model or describe your project for quick pricing</p>
+                </div>
+
+                <!-- Netlify Forms:
+                     - name + netlify attributes are what make it email you (via Netlify dashboard notifications)
+                     - file input is REAL and will be included in the submission
+                -->
+                <form
+                    id="quote-form"
+                    name="quote"
+                    method="POST"
+                    enctype="multipart/form-data"
+                    data-netlify="true"
+                    data-netlify-honeypot="bot-field"
+                    class="space-y-6"
+                >
+                    <!-- Required by Netlify -->
+                    <input type="hidden" name="form-name" value="quote">
+                    <p class="hidden">
+                        <label>Don’t fill this out: <input name="bot-field"></label>
+                    </p>
+
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Name</label>
+                            <input
+                                id="q-name"
+                                name="name"
+                                type="text"
+                                required
+                                class="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-white placeholder-gray-500"
+                                placeholder="John Doe"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                            <input
+                                id="q-email"
+                                name="email"
+                                type="email"
+                                required
+                                class="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-white placeholder-gray-500"
+                                placeholder="john@example.com"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Material Preference</label>
+                            <select
+                                id="q-material"
+                                name="material"
+                                class="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-white"
+                            >
+                                <option>PLA (Standard)</option>
+                                <option>PETG (Durable)</option>
+                                <option>ABS (Industrial)</option>
+                                <option>Resin (High Detail)</option>
+                                <option>Flexible (TPU)</option>
+                                <option>Not Sure - Recommend</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Quantity</label>
+                            <input
+                                id="q-qty"
+                                name="quantity"
+                                type="number"
+                                min="1"
+                                value="1"
+                                class="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-white"
+                            >
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Upload 3D File (STL, OBJ, 3MF)</label>
+
+                        <!-- Hidden real file input -->
+                        <input
+                            id="q-file"
+                            name="file"
+                            type="file"
+                            accept=".stl,.obj,.3mf,.amf"
+                            class="hidden"
+                        >
+
+                        <!-- Styled dropzone that triggers the input -->
+                        <button
+                            type="button"
+                            id="file-dropzone"
+                            class="w-full border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer bg-slate-800/30"
+                        >
+                            <i data-lucide="upload-cloud" class="w-10 h-10 text-gray-400 mx-auto mb-3"></i>
+                            <p class="text-gray-400 text-sm" id="file-label">
+                                Drag and drop your file here, or click to browse
+                            </p>
+                            <p class="text-gray-500 text-xs mt-1">Max file size depends on host settings</p>
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Project Details</label>
+                        <textarea
+                            id="q-details"
+                            name="details"
+                            rows="4"
+                            class="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-white placeholder-gray-500"
+                            placeholder="Describe your project, dimensions, color preferences, or any special requirements..."
+                        ></textarea>
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="w-full py-4 bg-gradient-to-r from-primary to-secondary rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-primary/30 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
+                    >
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                        Request Quote
+                    </button>
+
+                    <p class="text-xs text-gray-500 text-center">
+                        Submitting this form will send your request to Mini3DCreations.
+                    </p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="py-24 bg-slate-800/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">Customer <span class="gradient-text">Reviews</span></h2>
+                <p class="text-gray-400 text-lg">See what our clients say about our work</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="glass p-8 rounded-2xl border border-white/5">
+                    <div class="flex gap-1 text-yellow-400 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="text-gray-300 mb-6">"Amazing quality on my RPG miniatures! The detail is incredible and the turnaround was super fast. Will definitely order again."</p>
+                    <div class="flex items-center gap-3">
+                        <img src="https://static.photos/people/100x100/1" alt="Customer" class="w-12 h-12 rounded-full object-cover">
+                        <div>
+                            <div class="font-semibold">Mike Chen</div>
+                            <div class="text-sm text-gray-400">Tabletop Gamer</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-8 rounded-2xl border border-white/5">
+                    <div class="flex gap-1 text-yellow-400 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="text-gray-300 mb-6">"Used Mini 3D for prototyping my product line. The accuracy and material options helped me validate my designs quickly."</p>
+                    <div class="flex items-center gap-3">
+                        <img src="https://static.photos/people/100x100/2" alt="Customer" class="w-12 h-12 rounded-full object-cover">
+                        <div>
+                            <div class="font-semibold">Sarah Johnson</div>
+                            <div class="text-sm text-gray-400">Product Designer</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-8 rounded-2xl border border-white/5">
+                    <div class="flex gap-1 text-yellow-400 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="text-gray-300 mb-6">"They helped me repair a vintage car part that was impossible to find. Custom modeling + print saved my restoration project!"</p>
+                    <div class="flex items-center gap-3">
+                        <img src="https://static.photos/people/100x100/3" alt="Customer" class="w-12 h-12 rounded-full object-cover">
+                        <div>
+                            <div class="font-semibold">Robert Williams</div>
+                            <div class="text-sm text-gray-400">Car Enthusiast</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-24 bg-slate-900">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Frequently Asked <span class="gradient-text">Questions</span></h2>
+            </div>
+
+            <div class="space-y-4" id="faq-container">
+                <div class="glass rounded-xl border border-white/5 overflow-hidden">
+                    <button class="faq-btn w-full px-6 py-4 flex justify-between items-center text-left font-semibold hover:bg-white/5 transition-colors">
+                        <span>What file formats do you accept?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-4 text-gray-400">
+                        We accept STL, OBJ, 3MF, and AMF files. If you have a different format, contact us and we can likely convert it for you.
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl border border-white/5 overflow-hidden">
+                    <button class="faq-btn w-full px-6 py-4 flex justify-between items-center text-left font-semibold hover:bg-white/5 transition-colors">
+                        <span>How long does printing take?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-4 text-gray-400">
+                        Small items can be ready in 24 hours. Larger or complex prints typically take 2-5 days. Rush orders are available for an additional fee.
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl border border-white/5 overflow-hidden">
+                    <button class="faq-btn w-full px-6 py-4 flex justify-between items-center text-left font-semibold hover:bg-white/5 transition-colors">
+                        <span>Can you help design my model?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-4 text-gray-400">
+                        Yes! Our designers can create 3D models from sketches, photos, or descriptions. Design services are quoted separately based on complexity.
+                    </div>
+                </div>
+
+                <div class="glass rounded-xl border border-white/5 overflow-hidden">
+                    <button class="faq-btn w-full px-6 py-4 flex justify-between items-center text-left font-semibold hover:bg-white/5 transition-colors">
+                        <span>Do you offer bulk discounts?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-4 text-gray-400">
+                        Absolutely! We offer tiered pricing for quantities of 10+, 50+, and 100+ pieces. Contact us for custom manufacturing quotes.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-white/10 pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-12 mb-12">
+                <div class="col-span-2">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                            <i data-lucide="box" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <span class="text-lg font-bold">Mini 3D<span class="text-accent">Creations</span></span>
+                    </div>
+                    <p class="text-gray-400 mb-6 max-w-sm">Professional 3D printing services bringing your ideas to life. From prototypes to production, we've got you covered.</p>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                            <i data-lucide="instagram" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                            <i data-lucide="twitter" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                            <i data-lucide="facebook" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary/20 transition-colors">
+                            <i data-lucide="youtube" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-bold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#services" class="hover:text-white transition-colors">Services</a></li>
+                        <li><a href="#portfolio" class="hover:text-white transition-colors">Portfolio</a></li>
+                        <li><a href="#quote" class="hover:text-white transition-colors">Get Quote</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">About Us</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold mb-4">Contact</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="mail" class="w-4 h-4 text-accent"></i>
+                            hello@mini3dcreations.com
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="phone" class="w-4 h-4 text-accent"></i>
+                            +1 (555) 123-4567
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-accent mt-1"></i>
+                            123 Innovation Drive<br>Tech City, TC 90210
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-gray-500 text-sm">© 2024 Mini 3D Creations. All rights reserved.</p>
+                <div class="flex gap-6 text-sm text-gray-500">
+                    <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-white transition-colors">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Close mobile menu when clicking a link
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // Portfolio Filtering
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const portfolioItems = document.querySelectorAll('.portfolio-item');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => {
+                    b.classList.remove('bg-primary', 'text-white');
+                    b.classList.add('glass', 'text-gray-300');
+                });
+                btn.classList.remove('glass', 'text-gray-300');
+                btn.classList.add('bg-primary', 'text-white');
+
+                const filter = btn.getAttribute('data-filter');
+
+                portfolioItems.forEach(item => {
+                    if (filter === 'all' || item.getAttribute('data-category') === filter) {
+                        item.style.display = 'block';
+                        setTimeout(() => {
+                            item.style.opacity = '1';
+                            item.style.transform = 'scale(1)';
+                        }, 10);
+                    } else {
+                        item.style.opacity = '0';
+                        item.style.transform = 'scale(0.9)';
+                        setTimeout(() => {
+                            item.style.display = 'none';
+                        }, 300);
+                    }
+                });
+            });
+        });
+
+        // FAQ Accordion
+        const faqBtns = document.querySelectorAll('.faq-btn');
+
+        faqBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const content = btn.nextElementSibling;
+                const icon = btn.querySelector('i');
+                const isOpen = !content.classList.contains('hidden');
+
+                document.querySelectorAll('.faq-content').forEach(c => c.classList.add('hidden'));
+                document.querySelectorAll('.faq-btn i').forEach(i => i.style.transform = 'rotate(0deg)');
+
+                if (!isOpen) {
+                    content.classList.remove('hidden');
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            });
+        });
+
+        // Smooth Scroll for Navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Navbar Glass Effect on Scroll
+        const nav = document.querySelector('nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                nav.classList.add('shadow-lg');
+            } else {
+                nav.classList.remove('shadow-lg');
+            }
+        });
+
+        // Intersection Observer for Animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.glass, .portfolio-item').forEach((el, index) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+            observer.observe(el);
+        });
+
+        // --- Quote Form Enhancements (file picker + Netlify submission via fetch) ---
+        const quoteForm = document.getElementById('quote-form');
+        const dropzone = document.getElementById('file-dropzone');
+        const fileInput = document.getElementById('q-file');
+        const fileLabel = document.getElementById('file-label');
+
+        function setFileLabel(file) {
+            if (!file) {
+                fileLabel.textContent = 'Drag and drop your file here, or click to browse';
+                return;
+            }
+            fileLabel.textContent = `Selected: ${file.name}`;
+        }
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-primary/70');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-primary/70');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-primary/70');
+            const file = e.dataTransfer.files && e.dataTransfer.files[0];
+            if (file) {
+                fileInput.files = e.dataTransfer.files;
+                setFileLabel(file);
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            setFileLabel(fileInput.files && fileInput.files[0]);
+        });
+
+        // Submit to Netlify (no redirects) and show the same toast UI
+        quoteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fd = new FormData(quoteForm);
+
+            try {
+                const res = await fetch('/', {
+                    method: 'POST',
+                    body: fd
+                });
+
+                if (!res.ok) throw new Error('Submission failed');
+
+                // Success toast
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 transform translate-y-20 transition-transform duration-300';
+                notification.innerHTML = `
+                    <i data-lucide="check-circle" class="w-6 h-6"></i>
+                    <div>
+                        <div class="font-bold">Quote Requested!</div>
+                        <div class="text-sm opacity-90">We received your request. We’ll reply soon.</div>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                lucide.createIcons();
+
+                setTimeout(() => { notification.style.transform = 'translateY(0)'; }, 100);
+                setTimeout(() => {
+                    notification.style.transform = 'translateY(20rem)';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+
+                quoteForm.reset();
+                setFileLabel(null);
+            } catch (err) {
+                // Error toast
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 transform translate-y-20 transition-transform duration-300';
+                notification.innerHTML = `
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    <div>
+                        <div class="font-bold">Couldn’t submit</div>
+                        <div class="text-sm opacity-90">Please try again, or email us directly.</div>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                lucide.createIcons();
+
+                setTimeout(() => { notification.style.transform = 'translateY(0)'; }, 100);
+                setTimeout(() => {
+                    notification.style.transform = 'translateY(20rem)';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3500);
+            }
+        });
+    </script>
+</body>
+</html>
