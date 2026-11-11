@@ -75,7 +75,7 @@ let detail=x.qty+' × '+x.name+' @ $'+x.price.toFixed(2);
 if(x.kind==='kit')detail+='\nIncludes six selected trays, their labels (two per die holder), three tower blocks and hardware per kit';
 if(x.kind==='tray')detail+='\n'+$('tray-type').value+' with '+($('tray-type').value==='Reloading die holder'?'two included name tags':'one included name tag');
 $('summary').textContent=detail;
-$('total').textContent='Items subtotal: $'+x.total+' USD (shipping and tax excluded)';
+$('total').textContent='Items subtotal: $'+x.total+' USD (shipping and handling excluded)';
 }
 ['product','quantity','tray-type'].forEach(id=>$(id).addEventListener('change',update));
 $('shipping-zip').addEventListener('input',function(){
