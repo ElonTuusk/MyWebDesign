@@ -1,0 +1,73 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Shop | Mini3DCreations</title><script src="https://cdn.tailwindcss.com"></script><script src="https://unpkg.com/lucide@latest"></script><style>body{background:#0f172a;color:white;font-family:Inter,system-ui,sans-serif}.glass{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}.gradient-text{background:linear-gradient(90deg,#6366f1,#ec4899,#06b6d4);-webkit-background-clip:text;color:transparent}.field{display:block;width:100%;margin-top:6px;background:#0f172a;border:1px solid #64748b;border-radius:8px;padding:10px;color:white}.field:focus{outline:2px solid #06b6d4}</style></head><body><header class="bg-slate-950 border-b border-white/10"><nav class="max-w-7xl mx-auto px-5 py-5 flex justify-between items-center"><a class="font-bold text-xl" href="index.html">Mini3D<span class="text-cyan-300">Creations</span></a><div class="flex gap-5"><a href="index.html">Home</a><a href="#products">Products</a><a href="#configure">Order</a></div></nav></header>    <!-- Modular Bench Organizer: prelaunch product preview -->
+    <section id="products" class="py-24 bg-slate-950 border-y border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mb-10">
+          <span class="inline-block text-sm font-semibold tracking-widest uppercase text-cyan-300 mb-3">Coming Soon · Prototype in Development</span>
+          <h2 class="text-4xl md:text-5xl font-bold mb-5">Modular <span class="gradient-text">Bench Organizer</span></h2>
+          <p class="text-gray-300 text-lg leading-relaxed">A configurable organization system for reloading benches. Connect compatible modules side by side or arrange them vertically to reclaim workbench space.</p>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-4 mb-8" aria-label="Product configuration gallery">
+          <figure class="glass rounded-2xl overflow-hidden border border-white/10">
+            <img src="RTOTower4.JPG" alt="Modular reloading organizer arranged horizontally with interchangeable trays" loading="lazy" class="w-full h-56 object-contain bg-slate-800">
+            <figcaption class="p-4 font-semibold">Horizontal Layout</figcaption>
+          </figure>
+          <figure class="glass rounded-2xl overflow-hidden border border-white/10">
+            <img src="RTOTower5.JPG" alt="Five-tier vertical modular reloading bench organizer tower" loading="lazy" class="w-full h-56 object-contain bg-slate-800">
+            <figcaption class="p-4 font-semibold">Vertical Tower</figcaption>
+          </figure>
+          <figure class="glass rounded-2xl overflow-hidden border border-white/10">
+            <img src="RTOTower3.JPG" alt="Interchangeable modular cartridge blocks and accessory trays with caliber labels" loading="lazy" class="w-full h-56 object-contain bg-slate-800">
+            <figcaption class="p-4 font-semibold">Module Options</figcaption>
+          </figure>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mb-10">
+          <img src="RTOTower.JPG" alt="Reloading die holder module detail" loading="lazy" class="w-full h-28 object-contain rounded-xl bg-slate-800 border border-white/10">
+          <img src="RTOTower1.JPG" alt="Divided accessory tray detail" loading="lazy" class="w-full h-28 object-contain rounded-xl bg-slate-800 border border-white/10">
+          <img src="RTOTower2.JPG" alt="Cartridge organization block detail" loading="lazy" class="w-full h-28 object-contain rounded-xl bg-slate-800 border border-white/10">
+        </div>
+        <div class="grid md:grid-cols-2 gap-6 mb-10">
+          <article class="glass rounded-2xl p-8 border border-white/10">
+            <i data-lucide="layers" class="w-10 h-10 text-cyan-300 mb-5"></i>
+            <h3 class="text-2xl font-semibold mb-3">Complete Tower Kit</h3>
+            <p class="text-gray-300 mb-4">A freestanding vertical organizer designed for interchangeable modules and configurable storage layouts.</p>
+            <p class="text-sm text-gray-400">Final kit contents, dimensions and pricing will be announced after prototype testing.</p>
+          </article>
+          <article class="glass rounded-2xl p-8 border border-white/10">
+            <i data-lucide="blocks" class="w-10 h-10 text-pink-300 mb-5"></i>
+            <h3 class="text-2xl font-semibold mb-3">Individual Modules</h3>
+            <p class="text-gray-300 mb-4">Expand or customize your setup with cartridge organization blocks, divided accessory trays, reloading die holders and removable caliber labels.</p>
+            <p class="text-sm text-gray-400">Available combinations and fit compatibility are pending validation.</p>
+          </article>
+        </div>
+        <div class="glass rounded-2xl p-6 md:p-8 border border-white/10">
+          <h3 class="text-xl font-semibold mb-2">Direct website ordering is planned</h3>
+          <p class="text-gray-300 mb-5">We plan to offer secure checkout on Mini3DCreations.com for both complete kits and individual modules. Ordering is not yet enabled while we finalize the product and payment integration.</p>
+          <a href="#configure" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary font-semibold hover:opacity-90">Configure Your Order <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+        </div>
+      </div>
+    </section>
+
+<section id="configure" class="py-16 bg-slate-900"><div class="max-w-5xl mx-auto px-5">
+<h2 class="text-3xl font-bold mb-3">Configure your order</h2><p class="text-gray-300 mb-6">Prices and product options are shown for testing. This page uses PayPal Sandbox only. No real orders are created.</p>
+<div class="grid md:grid-cols-2 gap-6"><div class="rounded-2xl bg-slate-800 p-6 border border-white/10">
+<label class="block mb-4">Product<select id="product" class="field"><option value="kit">Complete tower kit — $45</option><option value="tray">Individual tray with name tag — $10</option><option value="block">Additional tower block — $8</option><option value="tag">Additional name tag — $2</option></select></label>
+<label class="block mb-4">Quantity<input id="quantity" class="field" type="number" min="1" max="20" value="1"></label>
+<div id="kit-fields"><p class="font-semibold mb-2">Select six trays and six matching name tags</p><p class="text-sm text-gray-300 mb-3">Each kit also includes three tower blocks and assembly hardware. The same six-tray configuration applies to each kit when quantity exceeds one.</p><div id="kit-rows" class="grid gap-3"></div></div>
+<div id="tray-fields" class="hidden"><label>Tray type<select id="tray-type" class="field"><option>Cartridge loading block</option><option>Reloading die holder</option><option>Divided accessory tray</option></select></label><div id="tray-label" class="mt-4"></div></div>
+<div id="tag-fields" class="hidden"><div id="extra-label"></div></div>
+</div><div class="rounded-2xl bg-slate-800 p-6 border border-white/10"><h3 class="text-xl font-bold mb-4">Order summary</h3><p id="summary" class="text-gray-300 whitespace-pre-line mb-4"></p><p id="total" class="text-3xl font-bold mb-5"></p><div class="border-t border-white/10 pt-5"><p class="text-amber-300 font-semibold">Sandbox test checkout</p><p class="text-sm text-gray-300 mb-4">PayPal will simulate the displayed total. No real payment, order fulfillment, tax or shipping calculation is enabled.</p><div id="paypal-sandbox-button"></div><p id="paypal-sandbox-status" role="status" aria-live="polite" class="text-sm text-gray-300 mt-3">Ready for a test checkout.</p></div></div></div></div></section><script src="https://www.paypal.com/sdk/js?client-id=AZZE04r6w_7Jd9ncaq_De77RBwY4HZSyOdFvDyAV6mXw8ckwjJaYCxx6rCmCRkXA-L0Rzf48v7M3_DRW&currency=USD&intent=capture" data-namespace="paypalSandbox"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const types=['Cartridge loading block','Reloading die holder','Divided accessory tray'];
+const calibers=["9mm Luger",".223 Remington","5.56 NATO",".300 AAC Blackout",".308 Winchester","7.62x51 NATO",".45 ACP",".40 S&W",".380 ACP",".38 Special",".357 Magnum",".44 Magnum","10mm Auto","6.5 Creedmoor",".30-06 Springfield",".270 Winchester",".243 Winchester","7mm Remington Magnum","7mm-08 Remington",".22-250 Remington",".300 Winchester Magnum","6mm ARC","6.5 Grendel","7.62x39","5.7x28","Custom text"];
+function labelField(i){const div=document.createElement('div');div.innerHTML='<label class="block text-sm">Name tag '+i+'</label>';const sel=document.createElement('select');sel.className='field caliber';calibers.forEach(c=>{const o=document.createElement('option');o.textContent=c;sel.appendChild(o)});const custom=document.createElement('input');custom.className='field hidden custom-caliber';custom.maxLength=40;custom.placeholder='Enter custom name tag';sel.addEventListener('change',()=>{custom.classList.toggle('hidden',sel.value!=='Custom text');update()});custom.addEventListener('input',update);div.append(sel,custom);return div}
+for(let i=1;i<=6;i++){const row=document.createElement('div');row.className='grid sm:grid-cols-2 gap-3';const wrap=document.createElement('label');wrap.className='text-sm';wrap.textContent='Tray '+i;const sel=document.createElement('select');sel.className='field kit-tray';types.forEach(t=>{const o=document.createElement('option');o.textContent=t;sel.appendChild(o)});sel.addEventListener('change',update);wrap.appendChild(sel);row.append(wrap,labelField(i));$('kit-rows').appendChild(row)}
+$('tray-label').appendChild(labelField('for tray'));$('extra-label').appendChild(labelField('replacement'));
+function selected(){const kind=$('product').value;const qty=Math.min(20,Math.max(1,parseInt($('quantity').value,10)||1));const price={kit:45,tray:10,block:8,tag:2}[kind];const name={kit:'Complete tower kit',tray:'Individual tray',block:'Additional tower block',tag:'Additional name tag'}[kind];return {kind,qty,price,name,total:(qty*price).toFixed(2)}}
+function update(){const x=selected();$('kit-fields').classList.toggle('hidden',x.kind!=='kit');$('tray-fields').classList.toggle('hidden',x.kind!=='tray');$('tag-fields').classList.toggle('hidden',x.kind!=='tag');let detail=x.qty+' × '+x.name+' @ $'+x.price.toFixed(2);if(x.kind==='kit')detail+='\nIncludes 6 selected trays, 6 tags, 3 tower blocks and hardware per kit';if(x.kind==='tray')detail+='\n'+$('tray-type').value+' with one name tag';$('summary').textContent=detail;$('total').textContent='$'+x.total+' USD'}
+['product','quantity','tray-type'].forEach(id=>$(id).addEventListener('change',update));update();
+if(!window.paypalSandbox){$('paypal-sandbox-status').textContent='PayPal Sandbox could not load.';return}
+paypalSandbox.Buttons({createOrder:(data,actions)=>{const x=selected();return actions.order.create({purchase_units:[{description:'Mini3DCreations sandbox test: '+x.qty+' '+x.name,amount:{currency_code:'USD',value:x.total}}]})},onApprove:(data,actions)=>actions.order.capture().then(()=>{$('paypal-sandbox-status').textContent='Sandbox payment simulated successfully. No real order was placed.'}),onCancel:()=>{$('paypal-sandbox-status').textContent='Sandbox checkout canceled.'},onError:()=>{$('paypal-sandbox-status').textContent='Sandbox checkout error.'}}).render('#paypal-sandbox-button')
+})();
+</script><script>if(window.lucide)lucide.createIcons()</script></body></html>
