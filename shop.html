@@ -66,14 +66,29 @@ function addSecondTag(select,container,label){const second=labelField(label+' se
 for(let i=1;i<=6;i++){const row=document.createElement('div');row.className='grid sm:grid-cols-2 gap-3';const wrap=document.createElement('label');wrap.className='text-sm';wrap.textContent='Tray '+i;const sel=document.createElement('select');sel.className='field kit-tray';types.forEach(t=>{const o=document.createElement('option');o.textContent=t;sel.appendChild(o)});sel.addEventListener('change',update);wrap.appendChild(sel);const tags=document.createElement('div');tags.className='grid gap-2';tags.appendChild(labelField(i+' first die set'));addSecondTag(sel,tags,i);row.append(wrap,tags);$('kit-rows').appendChild(row)}
 $('tray-label').appendChild(labelField('for tray first die set'));addSecondTag($('tray-type'),$('tray-label'),'for tray');$('extra-label').appendChild(labelField('replacement'));
 function selected(){const kind=$('product').value;const qty=Math.min(20,Math.max(1,parseInt($('quantity').value,10)||1));const price={kit:45,tray:10,block:8,tag:2}[kind];const name={kit:'Complete tower kit',tray:'Individual tray',block:'Additional tower block',tag:'Additional name tag'}[kind];return {kind,qty,price,name,total:(qty*price).toFixed(2)}}
-function update(){const x=selected();$('kit-fields').classList.toggle('hidden',x.kind!=='kit');$('tray-fields').classList.toggle('hidden',x.kind!=='tray');$('tag-fields').classList.toggle('hidden',x.kind!=='tag');let detail=x.qty+' × '+x.name+' @ $'+x.price.toFixed(2);if(x.kind==='kit')detail+='\nIncludes 6 trays, matching tags (2 per die holder), 3 tower blocks and hardware per kit';if(x.kind==='tray')detail+='\n'+$('tray-type').value+' with one name tag';$('summary').textContent=detail;$('total').textContent='Items subtotal: }
-['product','quantity','tray-type'].forEach(id=>$(id).addEventListener('change',update));update();
+function update(){
+const x=selected();
+$('kit-fields').classList.toggle('hidden',x.kind!=='kit');
+$('tray-fields').classList.toggle('hidden',x.kind!=='tray');
+$('tag-fields').classList.toggle('hidden',x.kind!=='tag');
+let detail=x.qty+' × '+x.name+' @ $'+x.price.toFixed(2);
+if(x.kind==='kit')detail+='\nIncludes six selected trays, their labels (two per die holder), three tower blocks and hardware per kit';
+if(x.kind==='tray')detail+='\n'+$('tray-type').value+' with '+($('tray-type').value==='Reloading die holder'?'two included name tags':'one included name tag');
+$('summary').textContent=detail;
+$('total').textContent='Items subtotal: $'+x.total+' USD (shipping and tax excluded)';
+}
+['product','quantity','tray-type'].forEach(id=>$(id).addEventListener('change',update));
+$('shipping-zip').addEventListener('input',function(){
+const zip=this.value.trim();
+$('shipping-status').textContent=/^[0-9]{5}$/.test(zip)?'ZIP accepted for testing. Live carrier rates are not connected yet.':'Enter a five-digit ZIP code to prepare a shipping quote.';
+});
+update();
 if(!window.paypalSandbox){$('paypal-sandbox-status').textContent='PayPal Sandbox could not load.';return}
-paypalSandbox.Buttons({createOrder:(data,actions)=>{const x=selected();return actions.order.create({purchase_units:[{description:'Mini3DCreations sandbox test: '+x.qty+' '+x.name,amount:{currency_code:'USD',value:x.total}}]})},onApprove:(data,actions)=>actions.order.capture().then(()=>{$('paypal-sandbox-status').textContent='Sandbox payment simulated successfully. No real order was placed.'}),onCancel:()=>{$('paypal-sandbox-status').textContent='Sandbox checkout canceled.'},onError:()=>{$('paypal-sandbox-status').textContent='Sandbox checkout error.'}}).render('#paypal-sandbox-button')
-})();
-</script><script>if(window.lucide)lucide.createIcons()</script></body></html>+x.total+' USD (shipping and tax excluded)'}
-['product','quantity','tray-type'].forEach(id=>$(id).addEventListener('change',update));update();
-if(!window.paypalSandbox){$('paypal-sandbox-status').textContent='PayPal Sandbox could not load.';return}
-paypalSandbox.Buttons({createOrder:(data,actions)=>{const x=selected();return actions.order.create({purchase_units:[{description:'Mini3DCreations sandbox test: '+x.qty+' '+x.name,amount:{currency_code:'USD',value:x.total}}]})},onApprove:(data,actions)=>actions.order.capture().then(()=>{$('paypal-sandbox-status').textContent='Sandbox payment simulated successfully. No real order was placed.'}),onCancel:()=>{$('paypal-sandbox-status').textContent='Sandbox checkout canceled.'},onError:()=>{$('paypal-sandbox-status').textContent='Sandbox checkout error.'}}).render('#paypal-sandbox-button')
+paypalSandbox.Buttons({
+createOrder:(data,actions)=>{const x=selected();return actions.order.create({purchase_units:[{description:'Mini3DCreations sandbox test: '+x.qty+' '+x.name,amount:{currency_code:'USD',value:x.total}}]})},
+onApprove:(data,actions)=>actions.order.capture().then(()=>{$('paypal-sandbox-status').textContent='Sandbox payment simulated successfully. No real order was placed.'}),
+onCancel:()=>{$('paypal-sandbox-status').textContent='Sandbox checkout canceled.'},
+onError:()=>{$('paypal-sandbox-status').textContent='Sandbox checkout error.'}
+}).render('#paypal-sandbox-button');
 })();
 </script><script>if(window.lucide)lucide.createIcons()</script></body></html>
