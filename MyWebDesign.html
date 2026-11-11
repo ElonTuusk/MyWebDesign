@@ -365,6 +365,18 @@
       </div>
     </section>
 
+    <!-- PayPal sandbox integration: development-only, not for real customer payments -->
+    <section id="paypal-sandbox" class="py-12 bg-slate-900 border-t border-white/10">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="glass rounded-2xl p-6 md:p-8 border border-amber-400/30">
+          <p class="text-amber-300 text-sm font-semibold uppercase tracking-wide mb-2">Developer test checkout · Sandbox only</p>
+          <h2 class="text-2xl font-bold mb-3">PayPal Checkout Test</h2>
+          <p class="text-gray-300 mb-4">This test simulates a $1.00 USD order for checkout integration testing only. It is not a real product purchase and does not place an order with Mini3DCreations.</p>
+          <div id="paypal-sandbox-button" class="max-w-md"></div>
+          <p id="paypal-sandbox-status" class="text-sm text-gray-400 mt-3" role="status" aria-live="polite">Waiting for sandbox checkout.</p>
+        </div>
+      </div>
+    </section>
     <!-- Portfolio Section -->
     <section id="portfolio" class="py-24 bg-slate-900">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1013,6 +1025,32 @@
                 }, 3500);
             }
         });
+    </script>
+    <script src="https://www.paypal.com/sdk/js?client-id=AZZE04r6w_7Jd9ncaq_De77RBwY4HZSyOdFvDyAV6mXw8ckwjJaYCxx6rCmCRkXA-L0Rzf48v7M3_DRW&currency=USD&intent=capture" data-namespace="paypalSandbox"></script>
+    <script>
+      (function () {
+        const target = document.getElementById('paypal-sandbox-button');
+        const status = document.getElementById('paypal-sandbox-status');
+        if (!target || !status) return;
+        if (!window.paypalSandbox) {
+          status.textContent = 'PayPal sandbox could not load. Please retry later.';
+          return;
+        }
+        window.paypalSandbox.Buttons({
+          createOrder: function (data, actions) {
+            return actions.order.create({
+              purchase_units: [{ description: 'Mini3DCreations sandbox integration test — not a product order', amount: { currency_code: 'USD', value: '1.00' } }]
+            });
+          },
+          onApprove: function (data, actions) {
+            return actions.order.capture().then(function () {
+              status.textContent = 'Sandbox payment simulated successfully. No real order was placed.';
+            });
+          },
+          onCancel: function () { status.textContent = 'Sandbox checkout canceled.'; },
+          onError: function () { status.textContent = 'Sandbox checkout encountered an error.'; }
+        }).render('#paypal-sandbox-button');
+      }());
     </script>
 </body>
 </html>
