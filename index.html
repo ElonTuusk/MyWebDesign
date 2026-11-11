@@ -372,6 +372,25 @@
           <p class="text-amber-300 text-sm font-semibold uppercase tracking-wide mb-2">Developer test checkout · Sandbox only</p>
           <h2 class="text-2xl font-bold mb-3">PayPal Checkout Test</h2>
           <p class="text-gray-300 mb-4">This test simulates a $1.00 USD order for checkout integration testing only. It is not a real product purchase and does not place an order with Mini3DCreations.</p>
+          <div class="grid sm:grid-cols-2 gap-4 mb-5">
+            <label class="block text-sm text-gray-200">Product
+              <select id="sandbox-product" class="mt-2 w-full rounded-lg bg-slate-800 border border-white/20 text-white p-3">
+                <option value="tower">Complete tower kit</option>
+                <option value="module">Individual module</option>
+              </select>
+            </label>
+            <label class="block text-sm text-gray-200">Quantity
+              <input id="sandbox-quantity" type="number" min="1" max="20" value="1" class="mt-2 w-full rounded-lg bg-slate-800 border border-white/20 text-white p-3">
+            </label>
+          </div>
+          <label class="block text-sm text-gray-200 mb-5">Module type (for individual modules)
+            <select id="sandbox-module" class="mt-2 w-full rounded-lg bg-slate-800 border border-white/20 text-white p-3">
+              <option>Cartridge loading block</option>
+              <option>Divided accessory tray</option>
+              <option>Cylindrical holder</option>
+            </select>
+          </label>
+          <p id="sandbox-selection-summary" class="text-sm text-cyan-200 mb-4">Test selection: 1 complete tower kit. Sandbox payment: $1.00 total.</p>
           <div id="paypal-sandbox-button" class="max-w-md"></div>
           <p id="paypal-sandbox-status" class="text-sm text-gray-400 mt-3" role="status" aria-live="polite">Waiting for sandbox checkout.</p>
         </div>
@@ -1036,10 +1055,26 @@
           status.textContent = 'PayPal sandbox could not load. Please retry later.';
           return;
         }
+        const product = document.getElementById('sandbox-product');
+        const quantity = document.getElementById('sandbox-quantity');
+        const moduleType = document.getElementById('sandbox-module');
+        const summary = document.getElementById('sandbox-selection-summary');
+        function selection() {
+          const qty = Math.max(1, Math.min(20, parseInt(quantity.value, 10) || 1));
+          const name = product.value === 'tower' ? 'complete tower kit' : moduleType.value.toLowerCase();
+          return { qty: qty, name: name };
+        }
+        function updateSummary() {
+          const selected = selection();
+          moduleType.disabled = product.value === 'tower';
+          summary.textContent = 'Test selection: ' + selected.qty + ' × ' + selected.name + '. Sandbox payment: $1.00 total. Final product prices not set.';
+        }
+        [product, quantity, moduleType].forEach(function (element) { element.addEventListener('change', updateSummary); });
+        updateSummary();
         window.paypalSandbox.Buttons({
           createOrder: function (data, actions) {
             return actions.order.create({
-              purchase_units: [{ description: 'Mini3DCreations sandbox integration test — not a product order', amount: { currency_code: 'USD', value: '1.00' } }]
+              purchase_units: [{ description: 'Sandbox test: ' + selection().qty + ' x ' + selection().name + ' (not a real order)', amount: { currency_code: 'USD', value: '1.00' } }]
             });
           },
           onApprove: function (data, actions) {
