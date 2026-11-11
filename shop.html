@@ -89,14 +89,9 @@ paypalSandbox.Buttons({
 createOrder:(data,actions)=>{const x=selected();return actions.order.create({purchase_units:[{description:'Mini3DCreations sandbox test: '+x.qty+' '+x.name,amount:{currency_code:'USD',value:x.total}}]})},
 onApprove:(data,actions)=>actions.order.capture().then(capture=>{
 const x=selected();
-const lines=['SANDBOX TEST — NOT A REAL ORDER','PayPal test order ID: '+(data.orderID||'unavailable'),'Product: '+x.name,'Quantity: '+x.qty,'Subtotal: 
-onCancel:()=>{$('paypal-sandbox-status').textContent='Sandbox checkout canceled.'},
-onError:()=>{$('paypal-sandbox-status').textContent='Sandbox checkout error.'}
-}).render('#paypal-sandbox-button');
-})();
-</script><script>if(window.lucide)lucide.createIcons()</script></body></html>+x.total,'Destination ZIP: '+($('shipping-zip').value||'not entered'),'Shipping: pending','Sales tax: pending'];
+const lines=['SANDBOX TEST — NOT A REAL ORDER','PayPal test order ID: '+(data.orderID||'unavailable'),'Product: '+x.name,'Quantity: '+x.qty,'Subtotal: $'+x.total,'Destination ZIP: '+($('shipping-zip').value||'not entered'),'Shipping: pending','Sales tax: pending'];
 if(x.kind==='kit'){document.querySelectorAll('.kit-tray').forEach((tray,i)=>{const row=tray.closest('.grid');const labels=Array.from(row.querySelectorAll('.caliber')).filter(el=>!el.parentElement.classList.contains('hidden')).map(el=>el.value==='Custom text'?(el.nextElementSibling.value||'Custom text unspecified'):el.value);lines.push('Tray '+(i+1)+': '+tray.value+' / '+labels.join(' + '))})}
-if(x.kind==='tray'){lines.push('Tray type: '+$('tray-type').value)}
+if(x.kind==='tray')lines.push('Tray type: '+$('tray-type').value);
 $('sandbox-receipt-text').textContent=lines.join('\\n');
 $('sandbox-receipt').classList.remove('hidden');
 $('paypal-sandbox-status').textContent='Sandbox payment simulated successfully. No real order was placed.';
