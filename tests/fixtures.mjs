@@ -11,14 +11,14 @@ export function approvedOrder(status = 'APPROVED', captureStatus = 'COMPLETED') 
     id: orderID, status, intent: 'CAPTURE',
     purchase_units: [{
       reference_id: 'organizer', custom_id: checkoutId,
-      amount: { currency_code: 'USD', value: '55.00', breakdown: {
-        item_total: { currency_code: 'USD', value: '45.00' },
+      amount: { currency_code: 'USD', value: '70.00', breakdown: {
+        item_total: { currency_code: 'USD', value: '60.00' },
         shipping: { currency_code: 'USD', value: '10.00' },
       } },
       shipping: { address: { country_code: 'US', postal_code: '65336' } },
       ...(status === 'COMPLETED' ? { payments: { captures: [{
         id: 'TESTCAPTURE123456', status: captureStatus,
-        amount: { currency_code: 'USD', value: '55.00' },
+        amount: { currency_code: 'USD', value: '70.00' },
       }] } } : {}),
     }],
   };

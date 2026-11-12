@@ -4,7 +4,7 @@ This branch is development-only. PR #2 stays in draft. Do not merge it to enable
 
 ## Current behavior
 
-- Kit $45, tray $10, tower block $8, replacement tag $2. Shipping is $10 once per order, including multiple quantities.
+- Kit $60, tray $15, tower block $8, replacement tag $2. Shipping is $10 once per order, including multiple quantities.
 - Each kit has six configured trays, matching tags, three tower blocks and hardware. Die holders have two independent tags; all other trays have one.
 - Quantity is a whole number from 1 to 20. A five-digit US destination ZIP and nonempty custom text (up to 40 characters) are required for checkout.
 - The preview uses the existing, fixed PayPal Sandbox client ID. There is no live API endpoint or configuration switch. Production hostnames cannot load checkout.

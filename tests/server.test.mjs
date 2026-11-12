@@ -40,13 +40,13 @@ function setup(options = {}) {
   return { handler, records, calls, create, capture, setOrder: value => { order = value; } };
 }
 
-test('server stores authoritative $55 configuration then one verified receipt', async () => {
+test('server stores authoritative $70 configuration then one verified receipt', async () => {
   const app = setup();
   const response = await app.create({ selection: { ...kit(), total: '0.01' } });
   assert.equal(response.status, 201);
-  assert.equal((await response.json()).totals.totalCents, 5500);
+  assert.equal((await response.json()).totals.totalCents, 7000);
   const draft = app.records.get(`drafts/${checkoutId}`);
-  assert.equal(draft.totals.totalCents, 5500);
+  assert.equal(draft.totals.totalCents, 7000);
   assert.ok(!JSON.stringify(draft).includes(token));
   assert.equal(app.records.has(`receipts/${checkoutId}`), false);
   const confirmed = await app.capture();
@@ -54,7 +54,7 @@ test('server stores authoritative $55 configuration then one verified receipt', 
   assert.equal(confirmed.status, 200);
   assert.equal(receipt.fulfillment, 'disabled');
   assert.equal(receipt.stored, true);
-  assert.equal(receipt.totals.totalCents, 5500);
+  assert.equal(receipt.totals.totalCents, 7000);
   assert.ok(!('tokenHash' in receipt));
 });
 test('duplicate create/capture callbacks return the same order and receipt', async () => {
@@ -152,5 +152,5 @@ test('PayPal client uses only sandbox URLs and stable, distinct request IDs', as
   assert.equal(operations[0].options.headers['PayPal-Request-Id'], checkoutId);
   assert.notEqual(operations[1].options.headers['PayPal-Request-Id'], checkoutId);
   assert.equal(operations[1].options.headers['PayPal-Request-Id'], operations[2].options.headers['PayPal-Request-Id']);
-  assert.equal(JSON.parse(operations[0].options.body).purchase_units[0].amount.value, '55.00');
+  assert.equal(JSON.parse(operations[0].options.body).purchase_units[0].amount.value, '70.00');
 });

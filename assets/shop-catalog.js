@@ -1,8 +1,8 @@
 // Shared display/validation rules. The server imports its own trusted copy.
 export const SANDBOX_CLIENT_ID = 'AZZE04r6w_7Jd9ncaq_De77RBwY4HZSyOdFvDyAV6mXw8ckwjJaYCxx6rCmCRkXA-L0Rzf48v7M3_DRW';
 export const PRODUCTS = Object.freeze({
-  kit: { name: 'Complete tower kit', cents: 4500 },
-  tray: { name: 'Individual tray', cents: 1000 },
+  kit: { name: 'Complete tower kit', cents: 6000 },
+  tray: { name: 'Individual tray', cents: 1500 },
   block: { name: 'Additional tower block', cents: 800 },
   tag: { name: 'Replacement name tag', cents: 200 },
 });

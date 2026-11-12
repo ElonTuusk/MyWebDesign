@@ -25,24 +25,24 @@ async function setup({ server = false, fetch: api, pending, denyStorage = false,
   function input(id, value, event = 'input') { $(id).value = value; $(id).dispatchEvent(new window.Event(event, { bubbles: true })); }
   const start = async () => {
     input('shipping-zip', '65336');
-    return callbacks.createOrder({}, { order: { async create(order) { assert.equal(order.purchase_units[0].amount.value, '55.00'); return orderID; } } });
+    return callbacks.createOrder({}, { order: { async create(order) { assert.equal(order.purchase_units[0].amount.value, '70.00'); return orderID; } } });
   };
   return { dom, window, $, input, callbacks, rendered, start };
 }
 
-test('shop initializes six tray rows, one PayPal container and $55 default total', async () => {
+test('shop initializes six tray rows, one PayPal container and $70 default total', async () => {
   const app = await setup();
   assert.equal(app.window.document.querySelectorAll('.kit-tray').length, 6);
   assert.equal(app.window.document.querySelectorAll('#paypal-sandbox-button').length, 1);
-  assert.equal(app.$('subtotal').textContent, '$45.00');
+  assert.equal(app.$('subtotal').textContent, '$60.00');
   assert.equal(app.$('shipping').textContent, '$10.00');
-  assert.equal(app.$('total').textContent, '$55.00 USD');
+  assert.equal(app.$('total').textContent, '$70.00 USD');
   assert.equal(app.rendered, true);
   app.dom.window.close();
 });
 test('every product and quantity refreshes pricing without a blur event', async () => {
   const app = await setup();
-  for (const [kind, expected] of [['kit', '$100.00 USD'], ['tray', '$30.00 USD'], ['block', '$26.00 USD'], ['tag', '$14.00 USD']]) {
+  for (const [kind, expected] of [['kit', '$130.00 USD'], ['tray', '$40.00 USD'], ['block', '$26.00 USD'], ['tag', '$14.00 USD']]) {
     app.input('product', kind); app.input('quantity', '2');
     assert.equal(app.$('total').textContent, expected);
   }
@@ -88,7 +88,7 @@ test('receipt uses original frozen configuration and Copy Receipt works', async 
   const receipt = app.$('sandbox-receipt-text').textContent;
   assert.match(receipt, /1 × Complete tower kit/);
   assert.match(receipt, /\.223 Remington \+ \.300 AAC Blackout/);
-  assert.match(receipt, /Sandbox total: \$55\.00 USD/);
+  assert.match(receipt, /Sandbox total: \$70\.00 USD/);
   assert.equal(app.$('sandbox-receipt').hidden, false);
   assert.equal(app.$('configuration-fields').disabled, false);
   let copied;
