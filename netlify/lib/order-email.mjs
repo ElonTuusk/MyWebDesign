@@ -4,6 +4,7 @@ import { MAX_PHOTO_BYTES, photoCount, receiptText } from '../../assets/shop-cata
 const EMAIL = /^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const RETRY_WINDOW_MS = 23 * 60 * 60 * 1000;
+const EMAIL_PHOTO_BYTES = 15 * 1024 * 1024;
 const digest = value => createHash('sha256').update(value).digest('hex');
 const timestamp = value => Number.isFinite(Date.parse(value)) ? Date.parse(value) : NaN;
 
@@ -39,10 +40,19 @@ export function createOrderNotifier({ env, getStore, fetch: request = fetch, now
       if (!job) {
         const age = +now() - timestamp(receipt.completedAt);
         if (!Number.isFinite(age) || age < 0 || age >= RETRY_WINDOW_MS) return { status: 'needs_review', acceptedParts };
-        // Five 3 MB originals encode to at most 20 MB. Multiple lamps/orders are
-        // split into numbered emails instead of exceeding the provider limit.
+        // Keep originals below 20 MB after base64 encoding, with room for email text.
         const parts = [];
-        for (let slot = 0; slot < keys.length; slot += 5) parts.push(keys.slice(slot, slot + 5));
+        let current = []; let currentBytes = 0;
+        for (const key of keys) {
+          const meta = (await store.getMetadata(key))?.metadata;
+          const size = meta?.size ?? 3 * 1024 * 1024; // Older originals were capped at 3 MB.
+          if (!Number.isInteger(size) || size < 1 || size > MAX_PHOTO_BYTES) throw new Error('Invalid photo size');
+          if (current.length && (current.length === 5 || currentBytes + size > EMAIL_PHOTO_BYTES)) {
+            parts.push(current); current = []; currentBytes = 0;
+          }
+          current.push(key); currentBytes += size;
+        }
+        if (current.length) parts.push(current);
         if (!parts.length) parts.push([]);
         const candidate = {
           version: 1, ...config, parts, createdAt: now().toISOString(),
@@ -63,17 +73,21 @@ export function createOrderNotifier({ env, getStore, fetch: request = fetch, now
         // attempt beyond that window; an owner must reconcile it in Resend.
         if (!Number.isFinite(age) || age < 0 || age >= RETRY_WINDOW_MS) return { status: 'needs_review', acceptedParts, totalParts };
         const attachments = [];
+        let attachmentBytes = 0;
         for (const key of job.parts[part]) {
           const slot = Number(key.split('/').at(-1));
           const entry = await store.getMetadata(key);
           const meta = entry?.metadata;
           if (!meta || meta.slot !== slot || meta.name !== photos[slot]?.name ||
               meta.kind !== receipt.selection.kind || meta.quantity !== receipt.selection.quantity ||
+              (meta.photoMode ?? 'different') !== (receipt.selection.photoMode ?? 'different') ||
               !['image/jpeg', 'image/png', 'image/webp'].includes(meta.type)) throw new Error('Photo metadata mismatch');
           const raw = await store.get(key, { type: 'arrayBuffer' });
           if (!raw) throw new Error('Photo unavailable');
           const bytes = Buffer.from(raw);
           if (!bytes.length || bytes.length > MAX_PHOTO_BYTES || digest(bytes) !== meta.digest) throw new Error('Photo integrity mismatch');
+          attachmentBytes += bytes.length;
+          if (attachmentBytes > EMAIL_PHOTO_BYTES) throw new Error('Email attachment size exceeded');
           attachments.push({ filename: `${String(slot + 1).padStart(2, '0')}-${meta.name}`, content: bytes.toString('base64') });
         }
         const payload = {

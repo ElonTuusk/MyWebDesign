@@ -157,10 +157,16 @@
                 </div>
                 <label>Personalization notes (optional)<textarea id="personalization-notes" name="personalization-notes" class="field" rows="3" maxlength="500" placeholder="Photo placement, logo description, or other details" disabled></textarea></label>
                 <div id="photo-fields" hidden>
+                  <fieldset id="ornament-photo-options" class="photo-options" hidden>
+                    <legend>Photos for your ornaments</legend>
+                    <label class="photo-option"><input id="ornament-photo-same" type="radio" name="ornament-photo-mode" value="same" checked disabled>Use the same photo for every ornament</label>
+                    <label class="photo-option"><input id="ornament-photo-different" type="radio" name="ornament-photo-mode" value="different" disabled>Use a different photo for each ornament</label>
+                  </fieldset>
                   <label for="photo-files" id="photo-label">Your photos</label>
-                  <p id="photo-instructions" class="muted"></p>
-                  <input id="photo-files" class="field" type="file" accept="image/jpeg,image/png,image/webp" multiple disabled>
-                  <p class="muted">JPG, PNG, or WebP; maximum 3 MB each. Photos are stored privately when checkout starts. After a confirmed test payment, configured order notifications email your photos and order details to Mini3DCreations. Use sample photos for testing.</p>
+                  <p id="photo-instructions" class="muted" aria-live="polite"></p>
+                  <input id="photo-files" class="field" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-instructions photo-selection-status" multiple disabled>
+                  <p id="photo-selection-status" class="muted" role="status" aria-live="polite"></p>
+                  <p class="muted">JPG, PNG, or WebP; maximum 10 MB per photo. Photos are stored privately when checkout starts. After a confirmed test payment, configured order notifications email your original photos and order details to Mini3DCreations. Use sample photos for testing.</p>
                   <ul id="photo-list" class="photo-list"></ul>
                   <p id="photo-upload-status" class="muted" role="status" aria-live="polite"></p>
                 </div>

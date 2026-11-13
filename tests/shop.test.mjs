@@ -28,7 +28,11 @@ async function setup({ server = false, fetch: api, pending, pendingEmails, denyS
     input('shipping-zip', '65336');
     return callbacks.createOrder({}, { order: { async create(order) { assert.equal(order.purchase_units[0].amount.value, '70.00'); return orderID; } } });
   };
-  return { dom, window, $, input, callbacks, rendered, start };
+  function files(values) {
+    Object.defineProperty($('photo-files'), 'files', { configurable: true, value: values });
+    $('photo-files').dispatchEvent(new window.Event('change', { bubbles: true }));
+  }
+  return { dom, window, $, input, files, callbacks, rendered, start };
 }
 
 test('shop initializes six tray rows, one PayPal container and $70 default total', async () => {
@@ -240,6 +244,69 @@ test('digital file has no payment button and photo products show their upload re
   app.input('quantity', '2');
   assert.match(app.$('photo-instructions').textContent, /10 photos/);
   app.input('product', 'ornament');
+  assert.match(app.$('photo-instructions').textContent, /one photo.*all 2 ornaments/);
+  app.$('ornament-photo-different').click();
   assert.match(app.$('photo-instructions').textContent, /2 photos/);
   app.dom.window.close();
+});
+
+test('ornament photo choices change upload requirements and preserve a selected photo when quantity changes', async () => {
+  const app = await setup({ server: true });
+  app.input('product', 'ornament'); app.input('quantity', '5');
+  app.input('shipping-zip', '65336'); app.input('customer-email', 'customer@example.com');
+  app.files([new app.window.File(['picture'], 'photo.jpg', { type: 'image/jpeg' })]);
+  assert.equal(app.$('photo-files').multiple, false);
+  assert.match(app.$('photo-selection-status').textContent, /1 of 1/);
+  let allowed = false;
+  app.callbacks.onClick({}, { resolve() { allowed = true; }, reject() { assert.fail('One shared photo must work'); } });
+  assert.equal(allowed, true);
+  assert.match(app.$('summary').textContent, /same photo on all 5 ornaments/);
+  app.$('ornament-photo-different').click();
+  assert.equal(app.$('photo-files').multiple, true);
+  assert.match(app.$('photo-selection-status').textContent, /1 of 5/);
+  app.callbacks.onClick({}, { resolve() { assert.fail('Missing photos must block checkout'); }, reject() {} });
+  app.callbacks.onError();
+  assert.match(app.$('paypal-sandbox-status').textContent, /exactly 5/);
+  app.$('ornament-photo-same').click(); app.input('quantity', '3');
+  assert.match(app.$('photo-selection-status').textContent, /1 of 1/);
+  assert.equal(app.$('photo-files').validity.customError, false);
+  app.dom.window.close();
+});
+
+test('file-size errors show beside uploads and survive the PayPal error callback', async () => {
+  const app = await setup({ server: true });
+  app.input('product', 'ornament'); app.input('shipping-zip', '65336'); app.input('customer-email', 'customer@example.com');
+  app.files([new app.window.File([new Uint8Array(10 * 1024 * 1024 + 1)], 'too-large.jpg', { type: 'image/jpeg' })]);
+  assert.match(app.$('photo-selection-status').textContent, /Maximum 10 MB/);
+  assert.equal(app.$('photo-selection-status').dataset.invalid, 'true');
+  app.callbacks.onClick({}, { resolve() { assert.fail('Too large'); }, reject() {} });
+  app.callbacks.onError();
+  assert.match(app.$('paypal-sandbox-status').textContent, /up to 10 MB/);
+  app.dom.window.close();
+});
+
+test('a 4.4 MB shared photo is uploaded in smaller requests before creating the five-ornament order', async () => {
+  const calls = [];
+  const app = await setup({ server: true, fetch: async (url, options) => {
+    if (url.endsWith('order-photos')) {
+      const f = options.body;
+      calls.push({ index: Number(f.get('chunkIndex')), count: Number(f.get('chunkCount')), size: f.get('file').size });
+      assert.equal(f.get('photoMode'), 'same'); assert.equal(f.get('quantity'), '5');
+      return Response.json({ accepted: true, saved: Number(f.get('chunkIndex')) === Number(f.get('chunkCount')) - 1 });
+    }
+    const body = JSON.parse(options.body);
+    assert.equal(calls.length, 2); assert.equal(body.selection.photos.length, 1); assert.equal(body.selection.quantity, 5);
+    return Response.json({ id: orderID });
+  } });
+  app.input('product', 'ornament'); app.input('quantity', '5'); app.input('shipping-zip', '65336'); app.input('customer-email', 'customer@example.com');
+  app.files([new app.window.File([new Uint8Array(Math.floor(4.4 * 1024 * 1024))], 'phone-photo.jpg', { type: 'image/jpeg' })]);
+  assert.equal(app.$('photo-files').validity.customError, false);
+  await app.callbacks.createOrder({}, {});
+  assert.ok(calls.every(item => item.size <= 3 * 1024 * 1024));
+  const pending = JSON.parse(app.window.sessionStorage.getItem('mini3d-sandbox-checkout-v1'));
+  const restored = await setup({ server: true, pending });
+  assert.equal(restored.$('ornament-photo-same').checked, true);
+  assert.match(restored.$('summary').textContent, /same photo on all 5 ornaments/);
+  assert.equal(restored.$('configuration-fields').disabled, true);
+  app.dom.window.close(); restored.dom.window.close();
 });

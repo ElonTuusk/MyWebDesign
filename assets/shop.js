@@ -1,7 +1,7 @@
 import {
   CALIBERS, TRAY_TYPES, SANDBOX_CLIENT_ID, PRODUCTS, tagCount, quote, money,
   normalizeSelection, descriptionLines, paypalOrder, completedCapture, receiptText,
-  PRINT_COLORS, MAX_PHOTO_BYTES, photoCount, isDigital,
+  PRINT_COLORS, MAX_PHOTO_BYTES, PHOTO_CHUNK_BYTES, photoCount, isDigital,
 } from './shop-catalog.js';
 
 const ENDPOINT = '/.netlify/functions/sandbox-checkout';
@@ -21,6 +21,7 @@ export async function initShop({ document, window, fetch: request = window.fetch
   let selectedFiles = [];
   let retainedPhotos = [];
   let previousKind = 'kit';
+  let checkoutError = '';
   const photoName = name => name.replace(/[\u0000-\u001f\u007f<>\\/]/g, '_').slice(0, 100);
 
   for (const id of ['font-color', 'background-color', 'border-color']) {
@@ -106,6 +107,7 @@ export async function initShop({ document, window, fetch: request = window.fetch
     const kind = $('product').value;
     return {
       kind, quantity: Number($('quantity').value), destinationZip: $('shipping-zip').value.trim(),
+      ...(kind === 'ornament' ? { photoMode: $('ornament-photo-same').checked ? 'same' : 'different' } : {}),
       ...(kind === 'kit' ? { trays: kitRows.map(read => read()) } : {}),
       ...(kind === 'tray' ? { trays: [singleTray()] } : {}),
       ...(kind === 'tag' ? { label: replacement.value() } : {}),
@@ -143,11 +145,27 @@ export async function initShop({ document, window, fetch: request = window.fetch
     for (const id of ['card-text', 'font-color', 'background-color', 'border-color']) $(id).disabled = value.kind !== 'card';
     $('card-text').required = value.kind === 'card';
     $('photo-fields').hidden = !photos;
+    $('ornament-photo-options').hidden = value.kind !== 'ornament';
+    for (const id of ['ornament-photo-same', 'ornament-photo-different']) $(id).disabled = value.kind !== 'ornament';
     $('photo-files').disabled = !photos;
     $('photo-files').required = photos && !retainedPhotos.length;
+    $('photo-files').multiple = !(value.kind === 'ornament' && value.photoMode === 'same');
     $('photo-instructions').textContent = value.kind === 'cube'
       ? `Select ${photoCount(value)} photos: five for each lamp, grouped in order. Maximum four lamps per order.`
-      : `Select ${photoCount(value)} photo${photoCount(value) === 1 ? '' : 's'}: one for each ornament.`;
+      : value.photoMode === 'same'
+        ? `Select one photo. We will use it for ${value.quantity === 1 ? 'your ornament' : `all ${value.quantity} ornaments`}.`
+        : `Select ${photoCount(value)} photo${photoCount(value) === 1 ? '' : 's'}: one for each ornament, in the order listed below.`;
+    const needed = photoCount(value);
+    const count = selectedFiles.length || retainedPhotos.length;
+    const mismatch = photos && Number.isInteger(needed) && needed > 0 && count !== needed;
+    const invalidFile = selectedFiles.find(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || !file.size || file.size > MAX_PHOTO_BYTES);
+    const fileError = invalidFile ? (invalidFile.size > MAX_PHOTO_BYTES
+      ? `${invalidFile.name} is ${(invalidFile.size / 1024 / 1024).toFixed(1)} MB. Maximum 10 MB per photo.`
+      : `${invalidFile.name}: choose a JPG, PNG, or WebP photo up to 10 MB.`) : '';
+    $('photo-selection-status').textContent = photos && Number.isInteger(needed) && needed > 0
+      ? `${count} of ${needed} required photo${needed === 1 ? '' : 's'} selected.${fileError ? ` ${fileError}` : mismatch ? ` Choose exactly ${needed} to continue.` : ''}` : '';
+    $('photo-selection-status').dataset.invalid = String(mismatch || Boolean(fileError));
+    $('photo-files').setCustomValidity(photos ? fileError || (mismatch ? `Choose exactly ${needed} photo${needed === 1 ? '' : 's'} for this order.` : '') : '');
     $('digital-file-info').hidden = !digital;
     $('shipping-fields').hidden = digital;
     $('shipping-zip').disabled = digital;
@@ -180,6 +198,10 @@ export async function initShop({ document, window, fetch: request = window.fetch
       if (label.caliber === 'Custom text') set(`${id}-custom`, label.text);
     }
     set('product', value.kind); set('quantity', String(value.quantity)); set('shipping-zip', value.destinationZip);
+    if (value.kind === 'ornament') {
+      $('ornament-photo-same').checked = value.photoMode === 'same';
+      $('ornament-photo-different').checked = value.photoMode !== 'same';
+    }
     if (value.kind === 'kit') value.trays.forEach((tray, index) => {
       set(`kit-tray-${index + 1}`, tray.type, 'change');
       tray.labels.forEach((label, tag) => restoreLabel(`kit-${index + 1}-label-${tag + 1}`, label));
@@ -211,20 +233,24 @@ export async function initShop({ document, window, fetch: request = window.fetch
     if (selectedFiles.length !== photoCount(value)) throw new Error(`Select ${photoCount(value)} photos for this order.`);
     for (const file of selectedFiles) {
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || !file.size || file.size > MAX_PHOTO_BYTES) {
-        throw new Error('Photos must be JPG, PNG, or WebP, up to 3 MB each.');
+        throw new Error(`${file.name}: photos must be JPG, PNG, or WebP, up to 10 MB each.`);
       }
     }
   }
   async function uploadPhotos(value) {
     if (!photoCount(value)) return;
     for (const [slot, file] of selectedFiles.entries()) {
-      const form = new window.FormData();
-      for (const [key, data] of Object.entries({ checkoutId: active.checkoutId, token: active.token, kind: value.kind, quantity: value.quantity, slot })) form.append(key, String(data));
-      form.append('file', file, photoName(file.name));
-      $('photo-upload-status').textContent = `Saving photo ${slot + 1} of ${selectedFiles.length} privately…`;
-      const response = await request('/.netlify/functions/order-photos', { method: 'POST', body: form });
-      const result = await response.json();
-      if (!response.ok || result.saved !== true) throw new Error(result.error || 'Photo upload failed. No payment was started.');
+      const chunkCount = Math.ceil(file.size / PHOTO_CHUNK_BYTES);
+      for (let chunkIndex = 0; chunkIndex < chunkCount; chunkIndex++) {
+        const form = new window.FormData();
+        for (const [key, data] of Object.entries({ checkoutId: active.checkoutId, token: active.token, kind: value.kind, quantity: value.quantity, slot, chunkIndex, chunkCount, totalSize: file.size })) form.append(key, String(data));
+        if (value.kind === 'ornament') form.append('photoMode', value.photoMode);
+        form.append('file', file.slice(chunkIndex * PHOTO_CHUNK_BYTES, (chunkIndex + 1) * PHOTO_CHUNK_BYTES, file.type), photoName(file.name));
+        $('photo-upload-status').textContent = `Saving photo ${slot + 1} of ${selectedFiles.length} privately… ${Math.round(chunkIndex / chunkCount * 100)}%`;
+        const response = await request('/.netlify/functions/order-photos', { method: 'POST', body: form });
+        const result = await response.json();
+        if (!response.ok || (chunkIndex === chunkCount - 1 ? result.saved !== true : result.accepted !== true)) throw new Error(result.error || 'Photo upload failed. No payment was started.');
+      }
     }
     $('photo-upload-status').textContent = 'Photos saved privately and attached to this checkout.';
   }
@@ -307,6 +333,7 @@ export async function initShop({ document, window, fetch: request = window.fetch
   $('order-form').addEventListener('submit', event => event.preventDefault());
   for (const id of ['product', 'quantity', 'shipping-zip', 'customer-email', 'card-text', 'font-color', 'background-color', 'border-color', 'personalization-notes']) $(id).addEventListener('input', update);
   $('product').addEventListener('change', update);
+  for (const id of ['ornament-photo-same', 'ornament-photo-different']) $(id).addEventListener('change', update);
   for (const link of document.querySelectorAll('[data-shop-product]')) link.addEventListener('click', event => {
     if (active) { event.preventDefault(); status('Finish or cancel the current checkout before choosing another product.'); return; }
     $('product').value = link.dataset.shopProduct;
@@ -390,8 +417,8 @@ export async function initShop({ document, window, fetch: request = window.fetch
       style: { layout: 'vertical', label: 'paypal', height: 45 },
       onClick(_data, actions) {
         if (active) { status('Finish or cancel the current Sandbox checkout first.'); return actions.reject(); }
-        try { const value = normalizeSelection(selection()); validateFiles(value); return actions.resolve(); }
-        catch (error) { status(error.message); $('order-form').reportValidity(); return actions.reject(); }
+        try { const value = normalizeSelection(selection()); validateFiles(value); checkoutError = ''; return actions.resolve(); }
+        catch (error) { checkoutError = error.message; status(checkoutError); $('order-form').reportValidity(); return actions.reject(); }
       },
       async createOrder(_data, actions) {
         if (active) throw new Error('A Sandbox checkout is already in progress.');
@@ -415,7 +442,7 @@ export async function initShop({ document, window, fetch: request = window.fetch
           saveActive();
           status('Complete or cancel the test in the PayPal Sandbox window.');
           return active.orderID;
-        } catch (error) { reset(); status(error.message); throw error; }
+        } catch (error) { reset(); checkoutError = error.message; status(checkoutError); throw error; }
       },
       async onApprove(data, actions) {
         if (!active || data.orderID !== active.orderID) { status('This Sandbox order does not match the current checkout.'); return; }
@@ -436,7 +463,7 @@ export async function initShop({ document, window, fetch: request = window.fetch
         if (active?.orderID) {
           status('Sandbox confirmation is incomplete. Check the existing test before starting another.');
           $('retry-test-record').hidden = !active.server;
-        } else { reset(); status('PayPal Sandbox could not start. Your configuration is still available.'); }
+        } else { reset(); status(checkoutError || 'PayPal Sandbox could not start. Your configuration is still available.'); }
       },
     });
     await buttons.render('#paypal-sandbox-button');

@@ -104,6 +104,33 @@ test('large photo orders split into numbered emails with no more than five attac
   }
 });
 
+test('a shared ornament photo is attached once with the number of copies in the owner email', async () => {
+  const app = setup({ count: 1 });
+  app.receipt.selection = normalizeSelection({ ...app.receipt.selection, quantity: 5, photoMode: 'same' });
+  app.receipt.totals = quote(app.receipt.selection);
+  Object.assign(app.metadata.get(app.receipt.uploads[0]), { quantity: 5, photoMode: 'same' });
+  assert.equal((await app.makeNotifier()(app.receipt)).status, 'accepted');
+  const body = app.requests[0].body;
+  assert.equal(body.attachments.length, 1);
+  assert.match(body.text, /same photo on all 5 ornaments/);
+  assert.match(body.text, /Sandbox total: \$70\.00/);
+});
+
+test('large originals are split by byte size and retain their exact content', async () => {
+  const app = setup({ count: 3 });
+  const sizes = [10, 10, 5].map(n => n * 1024 * 1024);
+  for (const [slot, key] of app.receipt.uploads.entries()) {
+    const bytes = Buffer.alloc(sizes[slot], slot + 1); bytes.set([255, 216, 255]);
+    app.records.set(key, bytes);
+    Object.assign(app.metadata.get(key), { size: bytes.length, digest: hash(bytes) });
+  }
+  assert.deepEqual(await app.makeNotifier()(app.receipt), { status: 'accepted', acceptedParts: 2, totalParts: 2 });
+  const attached = app.requests.flatMap(r => r.body.attachments);
+  assert.equal(attached.length, 3);
+  for (const [slot, file] of attached.entries()) assert.equal(hash(Buffer.from(file.content, 'base64')), app.metadata.get(app.receipt.uploads[slot]).digest);
+  for (const r of app.requests) assert.ok(r.body.attachments.reduce((sum, file) => sum + Buffer.from(file.content, 'base64').length, 0) <= 15 * 1024 * 1024);
+});
+
 test('email retries resume remaining parts and freeze recipient/configuration', async () => {
   const app = setup({ count: 6 }); app.setFailPart(1);
   const first = await app.makeNotifier()(app.receipt);
@@ -147,6 +174,7 @@ test('missing, altered, or cross-order photos cannot be emailed', async () => {
     app => app.records.set(app.receipt.uploads[0], Buffer.from('changed')),
     app => { app.receipt.uploads[0] = 'photos/another-order/0'; },
     app => { app.metadata.get(app.receipt.uploads[0]).name = 'different.jpg'; },
+    app => { app.metadata.get(app.receipt.uploads[0]).photoMode = 'same'; },
   ]) {
     const app = setup({ count: 1 }); change(app);
     assert.equal((await app.makeNotifier()(app.receipt)).status, 'retryable');

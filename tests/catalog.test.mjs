@@ -37,6 +37,22 @@ test('unavailable STL cannot be purchased and its display quote has no shipping'
   assert.equal(quote({ kind: 'stl', quantity: 1 }).totalCents, 400);
   assert.throws(() => normalizeSelection({ kind: 'stl', quantity: 1 }), /not available/);
 });
+test('multiple ornaments accept one shared photo or one photo per ornament without changing the quantity charged', () => {
+  const base = { kind: 'ornament', quantity: 5, destinationZip: '65336', customerEmail: 'customer@example.com' };
+  for (const [photoMode, count] of [['same', 1], ['different', 5]]) {
+    const selection = normalizeSelection({ ...base, photoMode, photos: Array.from({ length: count }, (_, slot) => ({ slot, name: `picture-${slot}.jpg` })) });
+    assert.equal(photoCount(selection), count);
+    assert.equal(quote(selection).totalCents, 7000);
+    const order = paypalOrder(selection).purchase_units[0];
+    assert.equal(order.items[0].quantity, '5');
+    assert.equal(order.amount.value, '70.00');
+    const receipt = receiptText({ selection, totals: quote(selection), stored: true });
+    assert.match(receipt, photoMode === 'same' ? /same photo on all 5 ornaments/ : /One photo per ornament/);
+    assert.throws(() => normalizeSelection({ ...selection, photos: [] }), /exactly/);
+    assert.throws(() => normalizeSelection({ ...selection, photoMode: 'wrong' }), /Choose how/);
+  }
+  assert.throws(() => normalizeSelection({ ...base, photos: [{ slot: 0, name: 'old.jpg' }] }), /exactly 5/);
+});
 test('server ignores client prices and preserves dual independent custom labels', () => {
   const input = kit();
   input.totalCents = 1;

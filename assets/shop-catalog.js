@@ -11,8 +11,10 @@ export const PRODUCTS = Object.freeze({
   stl: { name: 'Hormone Monster Figurine STL', cents: 400, digital: true, available: false },
 });
 export const PRINT_COLORS = ['Jade White', 'Beige', 'Gray', 'Pink', 'Pumpkin Orange', 'Bambu Green', 'Red', 'Blue', 'Purple', 'Black', 'Mistletoe Green', 'Coca Brown', 'Bright Green'];
-export const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
-export const photoCount = selection => selection.kind === 'cube' ? selection.quantity * 5 : selection.kind === 'ornament' ? selection.quantity : 0;
+export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+export const PHOTO_CHUNK_BYTES = 3 * 1024 * 1024;
+// Older saved orders without a choice used one photo for each ornament.
+export const photoCount = selection => selection.kind === 'cube' ? selection.quantity * 5 : selection.kind === 'ornament' ? (selection.photoMode === 'same' ? 1 : selection.quantity) : 0;
 export const isDigital = selection => PRODUCTS[selection.kind]?.digital === true;
 export const TRAY_TYPES = ['Cartridge loading block', 'Reloading die holder', 'Divided accessory tray'];
 export const CALIBERS = [
@@ -65,6 +67,10 @@ export function normalizeSelection(input) {
     fail('Enter a five-digit destination ZIP code.');
   }
   const result = { kind: input.kind, quantity: input.quantity, destinationZip: input.destinationZip };
+  if (input.kind === 'ornament' && input.photoMode !== undefined) {
+    if (!['same', 'different'].includes(input.photoMode)) fail('Choose how to use your ornament photos.');
+    result.photoMode = input.photoMode;
+  }
   if (input.kind === 'kit') {
     if (!Array.isArray(input.trays) || input.trays.length !== 6) fail('Choose exactly six trays for the kit.');
     result.trays = input.trays.map(tray);
@@ -88,7 +94,7 @@ export function normalizeSelection(input) {
         result.personalization[field] = config[field];
       }
     }
-    const required = photoCount(input);
+    const required = photoCount(result);
     if (required) {
       if (!Array.isArray(input.photos) || input.photos.length !== required) fail(`Choose exactly ${required} photo${required === 1 ? '' : 's'} for this order.`);
       result.photos = input.photos.map((photo, slot) => {
@@ -126,6 +132,11 @@ export function descriptionLines(selection) {
     lines.push(`Lettering: ${p.fontColor}; background: ${p.backgroundColor}; border: ${p.borderColor}`);
   }
   if (selection.personalization?.notes) lines.push(`Notes: ${selection.personalization.notes}`);
+  if (selection.kind === 'ornament' && selection.photoMode) {
+    lines.push(selection.photoMode === 'same'
+      ? `Photo use: Print the same photo on ${selection.quantity === 1 ? 'this ornament' : `all ${selection.quantity} ornaments`}.`
+      : 'Photo use: One photo per ornament, in the order listed below.');
+  }
   for (const photo of selection.photos || []) lines.push(`Photo ${photo.slot + 1}: ${photo.name}`);
   if (isDigital(selection)) lines.push('Digital download only. No physical shipment.');
   return lines;
