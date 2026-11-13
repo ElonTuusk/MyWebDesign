@@ -1,10 +1,12 @@
 import {
   CALIBERS, TRAY_TYPES, SANDBOX_CLIENT_ID, PRODUCTS, tagCount, quote, money,
   normalizeSelection, descriptionLines, paypalOrder, completedCapture, receiptText,
+  PRINT_COLORS, MAX_PHOTO_BYTES, photoCount, isDigital,
 } from './shop-catalog.js';
 
 const ENDPOINT = '/.netlify/functions/sandbox-checkout';
 const SESSION_KEY = 'mini3d-sandbox-checkout-v1';
+const EMAIL_SESSION_KEY = 'mini3d-sandbox-email-retries-v1';
 
 export async function initShop({ document, window, fetch: request = window.fetch.bind(window) }) {
   const $ = id => document.getElementById(id);
@@ -12,8 +14,32 @@ export async function initShop({ document, window, fetch: request = window.fetch
   let active = null;
   let serverReady = false;
   let captureRunning = false;
+  let retryingEmail = false;
+  let pendingEmails = [];
   let buttons;
   const kitRows = [];
+  let selectedFiles = [];
+  let retainedPhotos = [];
+  let previousKind = 'kit';
+  const photoName = name => name.replace(/[\u0000-\u001f\u007f<>\\/]/g, '_').slice(0, 100);
+
+  for (const id of ['font-color', 'background-color', 'border-color']) {
+    for (const color of [...PRINT_COLORS, ...(id === 'font-color' ? [] : ['Gold'])]) $(id).add(new window.Option(color, color));
+  }
+  $('background-color').value = 'Black';
+  $('border-color').value = 'Blue';
+  $('photo-files').addEventListener('change', () => {
+    selectedFiles = [...$('photo-files').files];
+    retainedPhotos = [];
+    $('photo-list').replaceChildren();
+    for (const [index, file] of selectedFiles.entries()) {
+      const li = document.createElement('li');
+      li.textContent = `${index + 1}. ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
+      $('photo-list').append(li);
+    }
+    $('photo-upload-status').textContent = selectedFiles.length ? 'Photos selected on this device. They have not been uploaded yet.' : '';
+    update();
+  });
 
   function labelField(id, title) {
     const root = document.createElement('div');
@@ -83,13 +109,50 @@ export async function initShop({ document, window, fetch: request = window.fetch
       ...(kind === 'kit' ? { trays: kitRows.map(read => read()) } : {}),
       ...(kind === 'tray' ? { trays: [singleTray()] } : {}),
       ...(kind === 'tag' ? { label: replacement.value() } : {}),
+      ...(['cube', 'ornament', 'card'].includes(kind) ? {
+        customerEmail: $('customer-email').value.trim(),
+        personalization: {
+          notes: $('personalization-notes').value,
+          ...(kind === 'card' ? { text: $('card-text').value, fontColor: $('font-color').value, backgroundColor: $('background-color').value, borderColor: $('border-color').value } : {}),
+        },
+        ...(['cube', 'ornament'].includes(kind) ? { photos: selectedFiles.length ? selectedFiles.map((file, slot) => ({ slot, name: photoName(file.name) })) : retainedPhotos } : {}),
+      } : {}),
     };
   }
   function update() {
     const value = selection();
+    if (previousKind !== value.kind) {
+      selectedFiles = []; retainedPhotos = [];
+      $('photo-files').value = '';
+      $('photo-list').replaceChildren();
+      $('photo-upload-status').textContent = '';
+      previousKind = value.kind;
+      if (value.photos) value.photos = [];
+    }
+    const customized = ['cube', 'ornament', 'card'].includes(value.kind);
+    const photos = ['cube', 'ornament'].includes(value.kind);
+    const digital = isDigital(value);
+    $('quantity').max = String(PRODUCTS[value.kind]?.maxQuantity || (digital ? 1 : 20));
     $('kit-fields').hidden = value.kind !== 'kit';
     $('tray-fields').hidden = value.kind !== 'tray';
     $('tag-fields').hidden = value.kind !== 'tag';
+    $('personalization-fields').hidden = !customized;
+    for (const id of ['customer-email', 'personalization-notes']) $(id).disabled = !customized;
+    $('customer-email').required = customized;
+    $('business-card-fields').hidden = value.kind !== 'card';
+    for (const id of ['card-text', 'font-color', 'background-color', 'border-color']) $(id).disabled = value.kind !== 'card';
+    $('card-text').required = value.kind === 'card';
+    $('photo-fields').hidden = !photos;
+    $('photo-files').disabled = !photos;
+    $('photo-files').required = photos && !retainedPhotos.length;
+    $('photo-instructions').textContent = value.kind === 'cube'
+      ? `Select ${photoCount(value)} photos: five for each lamp, grouped in order. Maximum four lamps per order.`
+      : `Select ${photoCount(value)} photo${photoCount(value) === 1 ? '' : 's'}: one for each ornament.`;
+    $('digital-file-info').hidden = !digital;
+    $('shipping-fields').hidden = digital;
+    $('shipping-zip').disabled = digital;
+    $('shipping-zip').required = !digital;
+    $('paypal-sandbox-button').hidden = digital;
     $('summary').textContent = descriptionLines(value).join('\n');
     try {
       const totals = quote(value);
@@ -126,7 +189,44 @@ export async function initShop({ document, window, fetch: request = window.fetch
       value.trays[0].labels.forEach((label, tag) => restoreLabel(`single-tray-label-${tag + 1}`, label));
     }
     if (value.kind === 'tag') restoreLabel('replacement-tag', value.label);
+    if (value.customerEmail) {
+      set('customer-email', value.customerEmail);
+      set('personalization-notes', value.personalization?.notes || '');
+    }
+    if (value.kind === 'card') {
+      set('card-text', value.personalization.text);
+      set('font-color', value.personalization.fontColor);
+      set('background-color', value.personalization.backgroundColor);
+      set('border-color', value.personalization.borderColor);
+    }
+    if (value.photos?.length) {
+      retainedPhotos = value.photos;
+      $('photo-upload-status').textContent = 'Previously uploaded photos are attached to the pending checkout.';
+    }
     update();
+  }
+  function validateFiles(value) {
+    if (!photoCount(value)) return;
+    if (!serverReady) throw new Error('Secure photo checkout is not connected yet. No payment has been started.');
+    if (selectedFiles.length !== photoCount(value)) throw new Error(`Select ${photoCount(value)} photos for this order.`);
+    for (const file of selectedFiles) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || !file.size || file.size > MAX_PHOTO_BYTES) {
+        throw new Error('Photos must be JPG, PNG, or WebP, up to 3 MB each.');
+      }
+    }
+  }
+  async function uploadPhotos(value) {
+    if (!photoCount(value)) return;
+    for (const [slot, file] of selectedFiles.entries()) {
+      const form = new window.FormData();
+      for (const [key, data] of Object.entries({ checkoutId: active.checkoutId, token: active.token, kind: value.kind, quantity: value.quantity, slot })) form.append(key, String(data));
+      form.append('file', file, photoName(file.name));
+      $('photo-upload-status').textContent = `Saving photo ${slot + 1} of ${selectedFiles.length} privately…`;
+      const response = await request('/.netlify/functions/order-photos', { method: 'POST', body: form });
+      const result = await response.json();
+      if (!response.ok || result.saved !== true) throw new Error(result.error || 'Photo upload failed. No payment was started.');
+    }
+    $('photo-upload-status').textContent = 'Photos saved privately and attached to this checkout.';
   }
   function reset() {
     active = null;
@@ -142,6 +242,42 @@ export async function initShop({ document, window, fetch: request = window.fetch
     if (!response.ok) throw new Error(data.error || 'Sandbox checkout could not be confirmed.');
     return data;
   }
+  function savePendingEmails() {
+    try {
+      if (pendingEmails.length) window.sessionStorage.setItem(EMAIL_SESSION_KEY, JSON.stringify(pendingEmails));
+      else window.sessionStorage.removeItem(EMAIL_SESSION_KEY);
+    } catch { /* An email retry in this tab still works when session storage is unavailable. */ }
+    $('retry-order-email').hidden = !pendingEmails.length;
+  }
+  function showEmailResult(notification, reference) {
+    if (!notification) return;
+    const messages = {
+      accepted: 'Order email accepted by Resend. Check the owner inbox; delivery is not yet confirmed.',
+      retryable: 'The test order is saved, but its email needs another attempt. Photos remain saved. Retrying the email will not repeat the payment.',
+      not_configured: 'Order email is not configured for this preview. The test order and any photos remain saved.',
+      needs_review: 'The email retry window has ended. The owner must check this order in Resend before resending. The test order and photos remain saved.',
+    };
+    $('order-email-status').textContent = messages[notification.status] || 'Order email status could not be confirmed.';
+    if (reference && ['retryable', 'not_configured'].includes(notification.status)) {
+      if (!pendingEmails.some(item => item.checkoutId === reference.checkoutId)) pendingEmails.push(reference);
+    } else if (reference && ['accepted', 'needs_review'].includes(notification.status)) {
+      pendingEmails = pendingEmails.filter(item => item.checkoutId !== reference.checkoutId);
+    }
+    savePendingEmails();
+  }
+  $('retry-order-email').addEventListener('click', async () => {
+    if (active || captureRunning || retryingEmail || !pendingEmails.length) return;
+    const reference = pendingEmails[0];
+    retryingEmail = true;
+    $('retry-order-email').disabled = true;
+    $('order-email-status').textContent = 'Retrying the saved test order email. No new payment is being made…';
+    try {
+      const result = await api({ action: 'capture', ...reference });
+      if (!result.receipt?.stored || result.receipt.paypalOrderId !== reference.orderID) throw new Error('Unconfirmed receipt');
+      showEmailResult(result.notification || { status: 'not_configured' }, reference);
+    } catch { $('order-email-status').textContent = 'Order email could not be confirmed. Your saved test order and photos are unchanged; you can retry again.'; }
+    finally { retryingEmail = false; $('retry-order-email').disabled = false; }
+  });
   function showReceipt(receipt) {
     $('sandbox-receipt-text').textContent = receiptText(receipt);
     $('sandbox-receipt').hidden = false;
@@ -157,9 +293,11 @@ export async function initShop({ document, window, fetch: request = window.fetch
     $('retry-test-record').hidden = true;
     status('Confirming the Sandbox payment and saving its test record…');
     try {
-      const { receipt } = await api({ action: 'capture', checkoutId: active.checkoutId, token: active.token, orderID: active.orderID });
+      const reference = { checkoutId: active.checkoutId, token: active.token, orderID: active.orderID };
+      const { receipt, notification } = await api({ action: 'capture', ...reference });
       if (!receipt?.stored || receipt.paypalOrderId !== active.orderID) throw new Error('The test record could not be verified.');
       showReceipt(receipt);
+      showEmailResult(notification, reference);
     } catch (error) {
       status(`${error.message} Use “Retry test confirmation” for this same order. Do not start another payment.`);
       $('retry-test-record').hidden = false;
@@ -167,8 +305,14 @@ export async function initShop({ document, window, fetch: request = window.fetch
   }
   $('retry-test-record').addEventListener('click', confirmServer);
   $('order-form').addEventListener('submit', event => event.preventDefault());
-  for (const id of ['product', 'quantity', 'shipping-zip']) $(id).addEventListener('input', update);
+  for (const id of ['product', 'quantity', 'shipping-zip', 'customer-email', 'card-text', 'font-color', 'background-color', 'border-color', 'personalization-notes']) $(id).addEventListener('input', update);
   $('product').addEventListener('change', update);
+  for (const link of document.querySelectorAll('[data-shop-product]')) link.addEventListener('click', event => {
+    if (active) { event.preventDefault(); status('Finish or cancel the current checkout before choosing another product.'); return; }
+    $('product').value = link.dataset.shopProduct;
+    $('quantity').value = '1';
+    update();
+  });
   $('copy-test-receipt').addEventListener('click', async () => {
     try {
       if (!window.navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
@@ -201,11 +345,23 @@ export async function initShop({ document, window, fetch: request = window.fetch
         return;
       }
       serverReady = config.serverReady === true;
+      $('order-email-status').textContent = config.emailReady
+        ? 'A completed test payment will email the order details and any photo attachments to the owner.'
+        : 'Order email is not connected for this preview yet.';
     }
   } catch { /* A static preview can still run the explicitly labeled browser-only Sandbox flow. */ }
   $('checkout-mode').textContent = serverReady
     ? 'Sandbox test records are verified and saved securely on the server.'
     : 'Browser-only Sandbox test. Server order recording is not connected yet.';
+
+  try {
+    const saved = JSON.parse(window.sessionStorage.getItem(EMAIL_SESSION_KEY));
+    if (Array.isArray(saved)) pendingEmails = saved.filter(item => item?.checkoutId && item.token && item.orderID);
+    if (pendingEmails.length) {
+      $('order-email-status').textContent = 'A saved test order email still needs confirmation. Use Retry order email; it will not repeat the payment.';
+      $('retry-order-email').hidden = false;
+    }
+  } catch { /* Empty or unavailable session storage. */ }
 
   try {
       const pending = JSON.parse(window.sessionStorage.getItem(SESSION_KEY));
@@ -234,12 +390,13 @@ export async function initShop({ document, window, fetch: request = window.fetch
       style: { layout: 'vertical', label: 'paypal', height: 45 },
       onClick(_data, actions) {
         if (active) { status('Finish or cancel the current Sandbox checkout first.'); return actions.reject(); }
-        try { normalizeSelection(selection()); return actions.resolve(); }
+        try { const value = normalizeSelection(selection()); validateFiles(value); return actions.resolve(); }
         catch (error) { status(error.message); $('order-form').reportValidity(); return actions.reject(); }
       },
       async createOrder(_data, actions) {
         if (active) throw new Error('A Sandbox checkout is already in progress.');
         const value = normalizeSelection(selection());
+        validateFiles(value);
         active = {
           server: serverReady, selection: value, totals: quote(value), checkoutId: window.crypto.randomUUID(),
           token: Array.from(window.crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, '0')).join(''),
@@ -249,6 +406,7 @@ export async function initShop({ document, window, fetch: request = window.fetch
         status('Creating a Sandbox test checkout…');
         try {
           if (serverReady) {
+            await uploadPhotos(value);
             const created = await api({ action: 'create', checkoutId: active.checkoutId, token: active.token, selection: value });
             active.orderID = created.id;
           } else {

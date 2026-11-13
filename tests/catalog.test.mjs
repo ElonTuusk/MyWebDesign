@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeSelection, quote, paypalOrder, completedCapture, receiptText } from '../assets/shop-catalog.js';
+import { normalizeSelection, quote, paypalOrder, completedCapture, receiptText, photoCount } from '../assets/shop-catalog.js';
 import { kit, tag, approvedOrder, orderID } from './fixtures.mjs';
 
 test('kit is $60 + $10 = $70; PayPal receives the exact same breakdown', () => {
@@ -13,9 +13,29 @@ test('kit is $60 + $10 = $70; PayPal receives the exact same breakdown', () => {
   assert.equal(unit.items[0].unit_amount.value, '60.00');
 });
 test('all prices and multi-quantity orders use one flat shipping charge', () => {
-  for (const [kind, unit] of Object.entries({ kit: 6000, tray: 1500, block: 800, tag: 200 })) {
+  for (const [kind, unit] of Object.entries({ kit: 6000, tray: 1500, block: 800, tag: 200, cube: 4500, ornament: 1200, card: 200 })) {
     assert.equal(quote({ kind, quantity: 3 }).totalCents, 3 * unit + 1000);
   }
+});
+test('custom physical products preserve personalization and require the correct photos', () => {
+  const common = { quantity: 1, destinationZip: '65336', customerEmail: 'customer@example.com', personalization: { notes: 'Front photo first' } };
+  for (const kind of ['cube', 'ornament']) {
+    const selection = { ...common, kind, photos: Array.from({ length: photoCount({ kind, quantity: 1 }) }, (_, slot) => ({ slot, name: `photo-${slot}.jpg` })) };
+    const normalized = normalizeSelection(selection);
+    assert.equal(normalized.photos.length, kind === 'cube' ? 5 : 1);
+    assert.equal(normalized.customerEmail, common.customerEmail);
+    assert.equal(normalized.personalization.notes, 'Front photo first');
+    assert.throws(() => normalizeSelection({ ...selection, photos: [] }), /exactly/);
+    assert.throws(() => normalizeSelection({ ...selection, customerEmail: 'wrong' }), /email/);
+  }
+  const card = normalizeSelection({ ...common, kind: 'card', personalization: { text: 'My Business\n555-0100', fontColor: 'Jade White', backgroundColor: 'Black', borderColor: 'Blue', notes: 'Logo: a small cube' } });
+  assert.match(receiptText({ selection: card, totals: quote(card), paypalOrderId: orderID, captureId: 'CAPTURE', stored: true }), /My Business\n555-0100/);
+  assert.equal(quote(card).totalCents, 1200);
+  assert.throws(() => normalizeSelection({ ...card, personalization: { ...card.personalization, fontColor: '<script>' } }));
+});
+test('unavailable STL cannot be purchased and its display quote has no shipping', () => {
+  assert.equal(quote({ kind: 'stl', quantity: 1 }).totalCents, 400);
+  assert.throws(() => normalizeSelection({ kind: 'stl', quantity: 1 }), /not available/);
 });
 test('server ignores client prices and preserves dual independent custom labels', () => {
   const input = kit();

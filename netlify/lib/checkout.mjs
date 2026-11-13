@@ -1,4 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { verifyPhotos } from './photos.mjs';
 import {
   SANDBOX_CLIENT_ID, normalizeSelection, quote, paypalOrder, completedCapture, money,
 } from '../../assets/shop-catalog.js';
@@ -83,14 +84,22 @@ function verifyOrder(order, draft, orderID) {
   }
 }
 
-export function createCheckoutHandler({ env, getStore, paypal, now = () => new Date() }) {
+export function createCheckoutHandler({ env, getStore, paypal, notify, now = () => new Date() }) {
+  async function receiptResponse(receipt) {
+    if (!notify) return json({ receipt });
+    let notification;
+    try { notification = await notify(receipt); }
+    catch { notification = { status: 'retryable', acceptedParts: 0 }; }
+    return json({ receipt, notification });
+  }
   return async request => {
     try {
       const allowed = sandboxAllowed(request, env);
       const ready = allowed && Boolean(env.PAYPAL_SANDBOX_CLIENT_SECRET);
       const url = new URL(request.url);
       if (request.method === 'GET' && url.searchParams.get('action') === 'config') {
-        return json({ mode: 'sandbox', livePaymentsEnabled: false, disabled: !allowed, serverReady: ready });
+        return json({ mode: 'sandbox', livePaymentsEnabled: false, disabled: !allowed, serverReady: ready,
+          ...(notify ? { emailReady: ready && notify.ready === true } : {}) });
       }
       if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
       if (!ready) throw new CheckoutError('Server-side Sandbox checkout is not configured for this preview.', 503);
@@ -116,11 +125,15 @@ export function createCheckoutHandler({ env, getStore, paypal, now = () => new D
         catch (error) { throw new CheckoutError(error.message); }
         const selectionHash = hash(JSON.stringify(selection));
         if (!draft) {
+          let uploads;
+          try { uploads = await verifyPhotos(store, selection, input.checkoutId, input.token); }
+          catch (error) { throw new CheckoutError(error.message); }
           // Persist the frozen configuration BEFORE contacting PayPal. Storage failure fails closed.
           const createdAt = now();
           const candidate = {
             version: 1, mode: 'sandbox', fulfillment: 'disabled', checkoutId: input.checkoutId,
             tokenHash: hash(input.token), selectionHash, selection, totals: quote(selection),
+            uploads,
             createdAt: createdAt.toISOString(), expiresAt: new Date(+createdAt + TTL_MS).toISOString(),
           };
           await store.setJSON(draftKey, candidate, { onlyIfNew: true });
@@ -147,7 +160,7 @@ export function createCheckoutHandler({ env, getStore, paypal, now = () => new D
         throw new CheckoutError('This order does not belong to the current Sandbox checkout.', 409);
       }
       const existingReceipt = await store.get(receiptKey, { type: 'json' });
-      if (existingReceipt) return json({ receipt: existingReceipt });
+      if (existingReceipt) return receiptResponse(existingReceipt);
       // Read PayPal before capturing. This also recovers a completed capture after a timeout or failed storage write.
       let order = await paypal.get(input.orderID);
       verifyOrder(order, draft, input.orderID);
@@ -164,13 +177,14 @@ export function createCheckoutHandler({ env, getStore, paypal, now = () => new D
         version: 1, mode: 'sandbox', fulfillment: 'disabled', stored: true,
         checkoutId: input.checkoutId, paypalOrderId: input.orderID, captureId: capture.id,
         selection: draft.selection, totals: draft.totals, completedAt: now().toISOString(),
+        uploads: draft.uploads || [],
         paypalShippingZip: order.purchase_units[0].shipping?.address?.postal_code || null,
       };
       // Immutable completion: concurrent callbacks cannot overwrite a verified receipt or duplicate a record.
       await store.setJSON(receiptKey, receipt, { onlyIfNew: true });
       const savedReceipt = await store.get(receiptKey, { type: 'json' });
       if (!savedReceipt) throw new CheckoutError('The payment was checked but its test record was not saved. Retry confirmation.', 503);
-      return json({ receipt: savedReceipt });
+      return receiptResponse(savedReceipt);
     } catch (error) {
       // Never return raw PayPal bodies, bearer tokens, credentials, or customer data in errors.
       return json({ error: error instanceof CheckoutError ? error.message : 'Sandbox service is temporarily unavailable. Retry confirmation for the same order.' }, error instanceof CheckoutError ? error.status : 503);

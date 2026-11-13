@@ -3,44 +3,133 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Configure a Mini3DCreations Modular Reloading Bench Organizer. Sandbox preview only; live ordering is not available.">
+  <meta name="description" content="Shop Mini3DCreations photo gifts, custom business cards, digital STL files, and the modular bench organizer. Clearly labeled physical products and digital downloads.">
   <title>Shop | Mini3DCreations</title>
   <link rel="stylesheet" href="assets/shop.css">
   <script type="module" src="assets/shop.js"></script>
+  <script type="module" src="assets/catalog-browse.js"></script>
 </head>
 <body>
   <header class="site-header">
     <nav class="container navigation" aria-label="Main navigation">
       <a class="brand" href="index.html">Mini3D<span>Creations</span></a>
-      <div class="nav-links"><a href="index.html">Home</a><a href="#products">Products</a><a href="#configure">Configure</a></div>
+      <div class="nav-links"><a href="index.html">Home</a><a href="#products">Shop</a><a href="#organizer">Bench organizer</a></div>
     </nav>
   </header>
   <main>
-    <section id="products" class="product-section">
+    <section id="products" class="catalog-section" aria-labelledby="catalog-heading">
+      <div class="container">
+        <div class="catalog-heading-row">
+          <div>
+            <p class="eyebrow">Mini3DCreations shop</p>
+            <h1 id="catalog-heading">Shop <span class="gradient-text">our creations.</span></h1>
+            <p class="intro">Personalized photo gifts, practical prints, and digital designs.</p>
+          </div>
+          <a class="shop-source-link" href="#configure">Order directly from Mini3DCreations <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="catalog-toolbar">
+          <div id="catalog-filters" class="catalog-filters" role="group" aria-label="Filter products by type" hidden>
+            <button type="button" class="catalog-filter" data-filter="all" aria-pressed="true">All items</button>
+            <button type="button" class="catalog-filter" data-filter="physical" aria-pressed="false">Physical items</button>
+            <button type="button" class="catalog-filter" data-filter="digital" aria-pressed="false">Digital files</button>
+          </div>
+          <p id="catalog-count" class="catalog-count" role="status" aria-live="polite">5 products</p>
+        </div>
+        <div id="catalog-grid" class="catalog-grid">
+          <article class="catalog-card panel" data-product-type="physical" data-product-id="organizer">
+            <a class="catalog-image" href="#organizer" aria-label="View Modular Reloading Bench Organizer">
+              <img src="RTOTower1.JPG" alt="Modular reloading bench organizer arranged as a vertical tower" width="527" height="731">
+            </a>
+            <div class="catalog-card-body">
+              <span class="product-type physical">Physical item</span>
+              <h2><a href="#organizer">Modular Reloading Bench Organizer</a></h2>
+              <p class="catalog-price">$60.00 <span>complete kit</span></p>
+              <p class="catalog-description">Six selected trays, matching name tags, three tower blocks, and assembly hardware.</p>
+              <p class="catalog-delivery">Printed product · Website preview</p>
+              <a class="button primary catalog-action" href="#configure" data-shop-product="kit">Configure your tower <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+          <article class="catalog-card panel" data-product-type="physical" data-product-id="908821246">
+            <a class="catalog-image" href="#configure" data-shop-product="cube" aria-label="View Personalized 5-Photo Lithophane Cube Lamp">
+              <img src="assets/products/lithophane-cube.webp" alt="Illuminated photo cube lamp with a black frame and personalized photo panels" width="600" height="600">
+            </a>
+            <div class="catalog-card-body">
+              <span class="product-type physical">Physical item</span>
+              <h2><a href="#configure" data-shop-product="cube">Personalized 5-Photo Lithophane Cube Lamp</a></h2>
+              <p class="catalog-price">$45.00</p>
+              <p class="catalog-description">Five favorite photos, one glowing keepsake. Includes an installed LED bulb.</p>
+              <p class="catalog-delivery">Personalized and shipped to you</p>
+              <a class="button catalog-action" href="#configure" data-shop-product="cube">Personalize &amp; order <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+          <article class="catalog-card panel" data-product-type="physical" data-product-id="908259150">
+            <a class="catalog-image" href="#configure" data-shop-product="ornament" aria-label="View Personalized Light-Up Photo Ornament">
+              <img src="assets/products/photo-ornament.webp" alt="Round light-up ornament with a personalized photo portrait" width="600" height="600" loading="lazy">
+            </a>
+            <div class="catalog-card-body">
+              <span class="product-type physical">Physical item</span>
+              <h2><a href="#configure" data-shop-product="ornament">Personalized Light-Up Photo Ornament</a></h2>
+              <p class="catalog-price">$12.00</p>
+              <p class="catalog-description">Turn one special photo into a glowing ornament. Light and replaceable batteries included.</p>
+              <p class="catalog-delivery">Personalized and shipped to you</p>
+              <a class="button catalog-action" href="#configure" data-shop-product="ornament">Personalize &amp; order <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+          <article class="catalog-card panel" data-product-type="physical" data-product-id="4459025713">
+            <a class="catalog-image" href="#configure" data-shop-product="card" aria-label="View Custom 3D-Printed Business Card">
+              <img src="assets/products/business-card.webp" alt="Mini3DCreations business card with raised lettering and a blue border" width="600" height="600" loading="lazy">
+            </a>
+            <div class="catalog-card-body">
+              <span class="product-type physical">Physical item</span>
+              <h2><a href="#configure" data-shop-product="card">Custom 3D-Printed Business Card</a></h2>
+              <p class="catalog-price">$2.00</p>
+              <p class="catalog-description">Your wording and colors in a printed PLA card, with an optional logo.</p>
+              <p class="catalog-delivery">Personalized and shipped to you</p>
+              <a class="button catalog-action" href="#configure" data-shop-product="card">Customize &amp; order <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+          <article class="catalog-card panel" data-product-type="digital" data-product-id="947305648">
+            <a class="catalog-image" href="#configure" data-shop-product="stl" aria-label="View Hormone Monster Figurine STL digital file">
+              <img src="assets/products/hormone-monster-stl.webp" alt="Gray render of the horned Hormone Monster figurine model on a circular base" width="794" height="447" loading="lazy">
+            </a>
+            <div class="catalog-card-body">
+              <span class="product-type digital">Digital file</span>
+              <h2><a href="#configure" data-shop-product="stl">Hormone Monster Figurine STL</a></h2>
+              <p class="catalog-price">$4.00</p>
+              <p class="catalog-description">An STL model for resin 3D printing, delivered in one ZIP file.</p>
+              <p class="catalog-delivery digital-delivery">Download only · Available soon</p>
+              <a class="button catalog-action" href="#configure" data-shop-product="stl">View file details <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+        </div>
+        <p class="catalog-note">Order and personalize directly on this website. Physical orders have a flat $10 shipping charge. The digital file will become available when its download is ready.</p>
+      </div>
+    </section>
+    <section id="organizer" class="product-section" aria-labelledby="organizer-heading">
       <div class="container">
         <p class="eyebrow">Prototype in development · Sandbox preview</p>
-        <h1>Modular Reloading<br><span class="gradient-text">Bench Organizer</span></h1>
+        <h2 id="organizer-heading" class="organizer-title">Modular Reloading<br><span class="gradient-text">Bench Organizer</span></h2>
         <p class="intro">Make room for your next project. Connect compatible modules side by side or arrange them vertically to reclaim workbench space.</p>
         <div class="gallery" role="group" aria-label="Product configuration gallery">
-          <figure class="panel"><img src="RTOTower4.JPG" alt="Modular organizer arranged horizontally with interchangeable trays" width="600" height="400"><figcaption>Horizontal layout</figcaption></figure>
-          <figure class="panel"><img src="RTOTower5.JPG" alt="Vertical modular reloading bench organizer tower" width="600" height="400"><figcaption>Vertical tower</figcaption></figure>
-          <figure class="panel"><img src="RTOTower3.JPG" alt="Interchangeable cartridge blocks and accessory trays with caliber labels" width="600" height="400"><figcaption>Module options</figcaption></figure>
+          <figure class="panel"><img src="RTOTower.JPG" alt="Modular organizer arranged horizontally with interchangeable trays" width="719" height="646"><figcaption>Horizontal layout</figcaption></figure>
+          <figure class="panel"><img src="RTOTower1.JPG" alt="Vertical modular reloading bench organizer tower" width="527" height="731"><figcaption>Vertical tower</figcaption></figure>
+          <figure class="panel"><img src="RTOTower2.JPG" alt="Interchangeable cartridge blocks and accessory trays with caliber labels" width="1058" height="735"><figcaption>Module options</figcaption></figure>
         </div>
         <div class="detail-gallery">
-          <img src="RTOTower.JPG" alt="Reloading die holder module detail" width="300" height="180" loading="lazy">
-          <img src="RTOTower1.JPG" alt="Divided accessory tray detail" width="300" height="180" loading="lazy">
-          <img src="RTOTower2.JPG" alt="Cartridge organization block detail" width="300" height="180" loading="lazy">
+          <img src="RTOTower3.JPG" alt="Reloading die holder module detail" width="300" height="180" loading="lazy">
+          <img src="RTOTower4.JPG" alt="Divided accessory tray detail" width="300" height="180" loading="lazy">
+          <img src="RTOTower5.JPG" alt="Cartridge organization block detail" width="300" height="180" loading="lazy">
         </div>
         <div class="product-cards">
           <article class="panel product-card"><p class="eyebrow">Build your setup</p><h2>Complete tower kit <span class="price">$60</span></h2><p>Six customer-selected trays, matching caliber name tags, three tower blocks, and assembly hardware.</p><p class="muted">Die holders fit two die sets and include two independently selected name tags. Other trays include one tag each.</p></article>
           <article class="panel product-card"><p class="eyebrow">Make it yours</p><h2>Individual modules</h2><ul class="price-list"><li><span>Tray with included name tag(s)</span><strong>$15</strong></li><li><span>Additional tower block</span><strong>$8</strong></li><li><span>Replacement name tag</span><strong>$2</strong></li></ul><p class="muted">Popular calibers or your custom text. Flat shipping and handling: $10 per order.</p></article>
         </div>
-        <a class="button primary" href="#configure">Configure your organizer <span aria-hidden="true">→</span></a>
+        <a class="button primary" href="#configure" data-shop-product="kit">Configure your organizer <span aria-hidden="true">→</span></a>
       </div>
     </section>
     <section id="configure" class="configure-section">
       <div class="container">
-        <p class="eyebrow">Your bench. Your layout.</p>
+        <p class="eyebrow">Made for you</p>
         <h2>Configure your order</h2>
         <p class="intro">Explore the options below. Checkout is for Sandbox testing only. No real payment, customer order, or shipment will be created.</p>
         <noscript><p class="notice">Enable JavaScript to configure this product and load Sandbox checkout.</p></noscript>
@@ -50,13 +139,34 @@
             <fieldset id="configuration-fields">
               <legend class="sr-only">Product configuration</legend>
               <div class="product-inputs">
-                <label>Product<select id="product" name="product" class="field"><option value="kit">Complete tower kit — $60</option><option value="tray">Individual tray — $15</option><option value="block">Additional tower block — $8</option><option value="tag">Replacement name tag — $2</option></select></label>
+                <label>Product<select id="product" name="product" class="field"><option value="kit">Complete tower kit — $60</option><option value="tray">Individual tray — $15</option><option value="block">Additional tower block — $8</option><option value="tag">Replacement name tag — $2</option><option value="cube">5-Photo Lithophane Cube Lamp — $45</option><option value="ornament">Light-Up Photo Ornament — $12</option><option value="card">Custom 3D-Printed Business Card — $2</option><option value="stl">Hormone Monster STL — $4 (available soon)</option></select></label>
                 <label>Quantity<input id="quantity" name="quantity" class="field" type="number" min="1" max="20" step="1" value="1" required></label>
               </div>
               <div id="kit-fields"><h3>Choose six trays</h3><p class="muted">Each kit includes three tower blocks and assembly hardware. Die holders include two name tags; other trays include one. For multiple kits, the same configuration applies to every kit.</p><div id="kit-rows"></div></div>
               <div id="tray-fields" hidden><label>Tray type<select id="tray-type" name="tray-type" class="field"><option>Cartridge loading block</option><option>Reloading die holder</option><option>Divided accessory tray</option></select></label><div id="tray-label" class="tag-fields"></div></div>
               <div id="tag-fields" hidden><div id="extra-label"></div></div>
-              <div class="shipping-fields"><label>Destination ZIP code<input id="shipping-zip" name="shipping-zip" class="field" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="5-digit ZIP code" required></label><p class="muted">Ships from 65336. US domestic shipping only; packaging fit and shipping eligibility still need final verification.</p></div>
+              <div id="personalization-fields" hidden>
+                <label>Contact email<input id="customer-email" name="customer-email" class="field" type="email" autocomplete="email" maxlength="254" disabled></label>
+                <div id="business-card-fields" hidden>
+                  <label>Exact wording for your card<textarea id="card-text" name="card-text" class="field" rows="4" maxlength="500" placeholder="Business name, contact details, and any other text" disabled></textarea></label>
+                  <div class="color-fields">
+                    <label>Lettering color<select id="font-color" class="field" disabled></select></label>
+                    <label>Background color<select id="background-color" class="field" disabled></select></label>
+                    <label>Border color<select id="border-color" class="field" disabled></select></label>
+                  </div>
+                </div>
+                <label>Personalization notes (optional)<textarea id="personalization-notes" name="personalization-notes" class="field" rows="3" maxlength="500" placeholder="Photo placement, logo description, or other details" disabled></textarea></label>
+                <div id="photo-fields" hidden>
+                  <label for="photo-files" id="photo-label">Your photos</label>
+                  <p id="photo-instructions" class="muted"></p>
+                  <input id="photo-files" class="field" type="file" accept="image/jpeg,image/png,image/webp" multiple disabled>
+                  <p class="muted">JPG, PNG, or WebP; maximum 3 MB each. Photos are stored privately when checkout starts. After a confirmed test payment, configured order notifications email your photos and order details to Mini3DCreations. Use sample photos for testing.</p>
+                  <ul id="photo-list" class="photo-list"></ul>
+                  <p id="photo-upload-status" class="muted" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+              <div id="digital-file-info" class="notice" hidden><h3>Digital download — available soon</h3><p>This is an STL in a ZIP file, not a printed figurine. Purchasing will be enabled once the download is ready. You will not be charged for an unavailable file.</p></div>
+              <div id="shipping-fields" class="shipping-fields"><label>Destination ZIP code<input id="shipping-zip" name="shipping-zip" class="field" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="5-digit ZIP code" required></label><p class="muted">Ships from 65336. US domestic shipping only; packaging fit and shipping eligibility still need final verification.</p></div>
             </fieldset>
           </form>
           <aside class="panel summary-panel" aria-labelledby="summary-heading">
@@ -66,6 +176,8 @@
             <p class="muted">Sales tax is not calculated in Sandbox. Tax requirements must be verified before live sales.</p>
             <div class="checkout-area"><h4>Sandbox test checkout</h4><p class="muted">Test accounts only. Real payments are disabled.</p><p id="checkout-mode" class="muted">Loading checkout settings…</p><div id="paypal-sandbox-button"></div><p id="paypal-sandbox-status" role="status" aria-live="polite">Loading PayPal Sandbox…</p><button id="retry-test-record" type="button" class="button" hidden>Retry test confirmation</button></div>
             <div id="sandbox-receipt" class="receipt" hidden><h4>Sandbox test receipt</h4><pre id="sandbox-receipt-text" tabindex="0"></pre><button id="copy-test-receipt" type="button" class="button">Copy Receipt</button><p id="copy-status" class="muted" role="status"></p></div>
+            <p id="order-email-status" class="muted" role="status" aria-live="polite"></p>
+            <button id="retry-order-email" type="button" class="button" hidden>Retry order email</button>
           </aside>
         </div>
       </div>

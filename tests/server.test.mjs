@@ -31,7 +31,7 @@ function setup(options = {}) {
       return structuredClone(order);
     },
   };
-  const handler = createCheckoutHandler({ env: { PAYPAL_SANDBOX_CLIENT_SECRET: 'TEST_ONLY', ...options.env }, getStore: () => store, paypal, now: options.now });
+  const handler = createCheckoutHandler({ env: { PAYPAL_SANDBOX_CLIENT_SECRET: 'TEST_ONLY', ...options.env }, getStore: () => store, paypal, now: options.now, notify: options.notify });
   const send = (body, extra = {}) => handler(new Request(extra.url || endpoint, {
     method: 'POST', headers: { origin, 'content-type': 'application/json', ...extra.headers }, body: JSON.stringify(body),
   }));
@@ -153,4 +153,26 @@ test('PayPal client uses only sandbox URLs and stable, distinct request IDs', as
   assert.notEqual(operations[1].options.headers['PayPal-Request-Id'], checkoutId);
   assert.equal(operations[1].options.headers['PayPal-Request-Id'], operations[2].options.headers['PayPal-Request-Id']);
   assert.equal(JSON.parse(operations[0].options.body).purchase_units[0].amount.value, '70.00');
+});
+
+test('email runs only after a verified receipt is persisted; an email failure does not invalidate payment', async () => {
+  let notified = 0;
+  const app = setup({ notify: async receipt => {
+    assert.deepEqual(app.records.get(`receipts/${checkoutId}`), receipt);
+    notified++;
+    throw new Error('Provider failed');
+  } });
+  await app.create(); assert.equal(notified, 0);
+  const response = await app.capture();
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.equal(result.receipt.stored, true);
+  assert.equal(result.notification.status, 'retryable');
+  await app.capture();
+  assert.equal(notified, 2);
+  assert.equal(app.calls.capture, 1, 'retrying email must not repeat the payment');
+  const failed = setup({ pending: true, notify: () => assert.fail('Must not email a pending capture') });
+  await failed.create(); assert.equal((await failed.capture()).status, 409);
+  const blocked = setup({ failWrite: key => key.startsWith('receipts/'), notify: () => assert.fail('Must not email an unrecorded capture') });
+  await blocked.create(); assert.equal((await blocked.capture()).status, 503);
 });
