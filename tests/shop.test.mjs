@@ -167,7 +167,7 @@ test('email failure keeps the paid receipt visible and retries the same order wi
     const selection = normalizeSelection(created.selection);
     return Response.json({
       receipt: { stored: true, selection, totals: quote(selection), paypalOrderId: orderID, captureId: 'TESTCAPTURE' },
-      notification: { status: confirmations === 1 ? 'retryable' : 'accepted' },
+      notification: confirmations === 1 ? { status: 'retryable', reason: 'RESEND_AUTH' } : { status: 'accepted' },
     });
   } });
   await app.start(); await app.callbacks.onApprove({ orderID }, {});
@@ -175,6 +175,8 @@ test('email failure keeps the paid receipt visible and retries the same order wi
   assert.equal(app.$('configuration-fields').disabled, false);
   assert.equal(app.$('retry-order-email').hidden, false);
   assert.match(app.$('order-email-status').textContent, /will not repeat the payment/);
+  assert.match(app.$('order-email-status').textContent, /Resend did not accept the configured API key/);
+  assert.match(app.$('order-email-status').textContent, /Support code: RESEND_AUTH/);
   assert.equal(app.window.sessionStorage.getItem('mini3d-sandbox-checkout-v1'), null);
   assert.ok(app.window.sessionStorage.getItem('mini3d-sandbox-email-retries-v1'));
   app.$('retry-order-email').click(); await new Promise(resolve => setImmediate(resolve));

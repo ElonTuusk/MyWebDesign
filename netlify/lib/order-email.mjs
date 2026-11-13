@@ -11,7 +11,7 @@ const timestamp = value => Number.isFinite(Date.parse(value)) ? Date.parse(value
 function settings(env) {
   const to = env.ORDER_NOTIFICATION_EMAIL?.trim();
   const from = env.ORDER_EMAIL_FROM?.trim() || 'orders@mini3dcreations.com';
-  return env.CONTEXT !== 'production' && env.RESEND_API_KEY &&
+  return env.CONTEXT !== 'production' && env.RESEND_API_KEY?.trim() &&
     EMAIL.test(to || '') && EMAIL.test(from) && to.length <= 254 && from.length <= 254
     ? { from: `Mini3DCreations <${from}>`, to: [to] } : null;
 }
@@ -23,10 +23,12 @@ export function createOrderNotifier({ env, getStore, fetch: request = fetch, now
     const config = settings(env);
     if (!config) return { status: 'not_configured', acceptedParts: 0 };
     let acceptedParts = 0;
+    let reason = 'RECEIPT_READ';
     try {
       if (!UUID.test(receiptReference?.checkoutId || '')) throw new Error('Invalid receipt');
       const store = getStore();
       const receipt = await store.get(`receipts/${receiptReference.checkoutId}`, { type: 'json' });
+      reason = 'RECEIPT_CHECK';
       if (!receipt || receipt.mode !== 'sandbox' || receipt.fulfillment !== 'disabled' ||
           receipt.stored !== true || !receipt.captureId || !receipt.paypalOrderId ||
           receipt.checkoutId !== receiptReference.checkoutId) throw new Error('Unverified receipt');
@@ -36,6 +38,7 @@ export function createOrderNotifier({ env, getStore, fetch: request = fetch, now
       if (keys.length !== photoCount(receipt.selection) || keys.length !== photos.length ||
           keys.some((key, slot) => key !== `photos/${checkoutId}/${slot}`)) throw new Error('Invalid photo references');
       const jobKey = `notifications/${checkoutId}`;
+      reason = 'EMAIL_RECORD_READ';
       let job = await store.get(jobKey, { type: 'json' });
       if (!job) {
         const age = +now() - timestamp(receipt.completedAt);
@@ -43,6 +46,7 @@ export function createOrderNotifier({ env, getStore, fetch: request = fetch, now
         // Keep originals below 20 MB after base64 encoding, with room for email text.
         const parts = [];
         let current = []; let currentBytes = 0;
+        reason = 'PHOTO_READ';
         for (const key of keys) {
           const meta = (await store.getMetadata(key))?.metadata;
           const size = meta?.size ?? 3 * 1024 * 1024; // Older originals were capped at 3 MB.
@@ -58,15 +62,18 @@ export function createOrderNotifier({ env, getStore, fetch: request = fetch, now
           version: 1, ...config, parts, createdAt: now().toISOString(),
           receiptDigest: digest(JSON.stringify(receipt)),
         };
+        reason = 'EMAIL_RECORD_SAVE';
         await store.setJSON(jobKey, candidate, { onlyIfNew: true });
         job = await store.get(jobKey, { type: 'json' });
       }
+      reason = 'EMAIL_RECORD_CHECK';
       if (!job || job.receiptDigest !== digest(JSON.stringify(receipt))) throw new Error('Changed receipt');
       const totalParts = job.parts.length;
       // Bound this stage so a delayed email cannot hold payment confirmation open.
       const signal = AbortSignal.timeout(15000);
       for (let part = 0; part < totalParts; part++) {
         const partKey = `${jobKey}/parts/${part}`;
+        reason = 'EMAIL_RECORD_READ';
         if (await store.get(partKey, { type: 'json' })) { acceptedParts++; continue; }
         const age = +now() - timestamp(job.createdAt);
         // Resend deduplicates for 24 hours. Never blindly resend an uncertain
@@ -75,21 +82,26 @@ export function createOrderNotifier({ env, getStore, fetch: request = fetch, now
         const attachments = [];
         let attachmentBytes = 0;
         for (const key of job.parts[part]) {
+          reason = 'PHOTO_READ';
           const slot = Number(key.split('/').at(-1));
           const entry = await store.getMetadata(key);
           const meta = entry?.metadata;
+          reason = 'PHOTO_CHECK';
           if (!meta || meta.slot !== slot || meta.name !== photos[slot]?.name ||
               meta.kind !== receipt.selection.kind || meta.quantity !== receipt.selection.quantity ||
               (meta.photoMode ?? 'different') !== (receipt.selection.photoMode ?? 'different') ||
               !['image/jpeg', 'image/png', 'image/webp'].includes(meta.type)) throw new Error('Photo metadata mismatch');
+          reason = 'PHOTO_READ';
           const raw = await store.get(key, { type: 'arrayBuffer' });
           if (!raw) throw new Error('Photo unavailable');
           const bytes = Buffer.from(raw);
+          reason = 'PHOTO_CHECK';
           if (!bytes.length || bytes.length > MAX_PHOTO_BYTES || digest(bytes) !== meta.digest) throw new Error('Photo integrity mismatch');
           attachmentBytes += bytes.length;
           if (attachmentBytes > EMAIL_PHOTO_BYTES) throw new Error('Email attachment size exceeded');
           attachments.push({ filename: `${String(slot + 1).padStart(2, '0')}-${meta.name}`, content: bytes.toString('base64') });
         }
+        reason = 'EMAIL_PREPARE';
         const payload = {
           from: job.from, to: job.to,
           subject: `[SANDBOX TEST] Mini3DCreations order ${checkoutId.slice(0, 8)}${totalParts > 1 ? ` (${part + 1}/${totalParts})` : ''}`,
@@ -105,29 +117,41 @@ export function createOrderNotifier({ env, getStore, fetch: request = fetch, now
         };
         const payloadDigest = digest(JSON.stringify(payload));
         const attemptKey = `${partKey}/attempt`;
+        reason = 'EMAIL_RECORD_SAVE';
         await store.setJSON(attemptKey, { payloadDigest }, { onlyIfNew: true });
         const attempt = await store.get(attemptKey, { type: 'json' });
+        reason = 'EMAIL_RECORD_CHECK';
         if (attempt?.payloadDigest !== payloadDigest) throw new Error('Email payload changed');
+        reason = 'RESEND_CONNECTION';
         const response = await request('https://api.resend.com/emails', {
           method: 'POST', signal,
           headers: {
-            Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json',
+            Authorization: `Bearer ${env.RESEND_API_KEY.trim()}`, 'Content-Type': 'application/json',
             'Idempotency-Key': `sandbox-order/${checkoutId}/part/${part}`,
           },
           body: JSON.stringify(payload),
         });
+        reason = response.ok ? 'RESEND_RESPONSE' : ({
+          401: 'RESEND_AUTH', 403: 'RESEND_PERMISSION', 409: 'RESEND_CONFLICT',
+          422: 'RESEND_VALIDATION', 429: 'RESEND_RATE_LIMIT',
+        }[response.status] || (response.status >= 500 ? 'RESEND_UNAVAILABLE' : 'RESEND_REJECTED'));
         const result = await response.json();
+        if (!response.ok && (['invalid_api_key', 'missing_api_key'].includes(result?.name) || result?.message === 'API key is invalid')) reason = 'RESEND_AUTH';
+        if (!response.ok && ['daily_quota_exceeded', 'monthly_quota_exceeded'].includes(result?.name)) reason = 'RESEND_QUOTA';
         if (!response.ok || typeof result.id !== 'string' || !result.id) throw new Error('Email not accepted');
+        reason = 'EMAIL_ACCEPTANCE_SAVE';
         await store.setJSON(partKey, { providerId: result.id, acceptedAt: now().toISOString() }, { onlyIfNew: true });
         if (!(await store.get(partKey, { type: 'json' }))?.providerId) throw new Error('Email result not saved');
         acceptedParts++;
       }
       // API acceptance is not proof of delivery to Gmail; the UI says so.
       return { status: 'accepted', acceptedParts, totalParts };
-    } catch {
+    } catch (error) {
       // Preserve the payment receipt and private uploads. Never expose a provider
       // error body, secret, owner address, or customer photo in an error response.
-      return { status: 'retryable', acceptedParts };
+      // Only fixed diagnostic codes leave the server; never include raw exceptions or provider messages.
+      if (reason === 'RESEND_CONNECTION' && ['TimeoutError', 'AbortError'].includes(error?.name)) reason = 'RESEND_TIMEOUT';
+      return { status: 'retryable', acceptedParts, reason };
     }
   }
   notify.ready = Boolean(settings(env));

@@ -49,7 +49,7 @@ function setup({ count = 0 } = {}) {
     assert.equal(deliveries.get(key).payload, options.body, 'a retry must preserve the complete payload');
     return Response.json({ id: deliveries.get(key).id });
   };
-  const makeNotifier = () => createOrderNotifier({ env, getStore: () => store, fetch, now: () => clock });
+  const makeNotifier = (overrides = {}) => createOrderNotifier({ env, getStore: () => store, fetch, now: () => clock, ...overrides });
   return { env, receipt, records, metadata, requests, deliveries, makeNotifier,
     setClock: value => { clock = value; }, setFailPart: value => { failPart = value; }, setFailMarker: value => { failMarker = value; } };
 }
@@ -134,7 +134,7 @@ test('large originals are split by byte size and retain their exact content', as
 test('email retries resume remaining parts and freeze recipient/configuration', async () => {
   const app = setup({ count: 6 }); app.setFailPart(1);
   const first = await app.makeNotifier()(app.receipt);
-  assert.deepEqual(first, { status: 'retryable', acceptedParts: 1 });
+  assert.deepEqual(first, { status: 'retryable', acceptedParts: 1, reason: 'RESEND_RATE_LIMIT' });
   assert.ok(!JSON.stringify(first).includes('PRIVATE_PROVIDER_ERROR'));
   app.env.ORDER_NOTIFICATION_EMAIL = 'another@example.com';
   app.env.ORDER_EMAIL_FROM = 'different@example.com';
@@ -180,4 +180,41 @@ test('missing, altered, or cross-order photos cannot be emailed', async () => {
     assert.equal((await app.makeNotifier()(app.receipt)).status, 'retryable');
     assert.equal(app.requests.length, 0);
   }
+});
+
+test('email failure codes identify the step without exposing secrets or provider messages', async () => {
+  const cases = [
+    [401, 'validation_error', 'RESEND_AUTH'],
+    [403, 'validation_error', 'RESEND_PERMISSION'],
+    [409, 'invalid_idempotent_request', 'RESEND_CONFLICT'],
+    [422, 'invalid_attachment', 'RESEND_VALIDATION'],
+    [429, 'rate_limit_exceeded', 'RESEND_RATE_LIMIT'],
+    [429, 'daily_quota_exceeded', 'RESEND_QUOTA'],
+    [503, 'service_unavailable', 'RESEND_UNAVAILABLE'],
+  ];
+  for (const [status, name, reason] of cases) {
+    const app = setup();
+    const result = await app.makeNotifier({ fetch: async () => Response.json({ name, message: 'PRIVATE owner@example.com TEST_SECRET' }, { status }) })(app.receipt);
+    assert.deepEqual(result, { status: 'retryable', acceptedParts: 0, reason });
+    assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+    assert.ok(!JSON.stringify(result).includes('TEST_SECRET'));
+    assert.ok(!JSON.stringify(result).includes('owner@example.com'));
+  }
+  const app = setup({ count: 1 });
+  assert.equal((await app.makeNotifier({ fetch: async () => { throw new TypeError('PRIVATE NETWORK DETAILS'); } })(app.receipt)).reason, 'RESEND_CONNECTION');
+  assert.equal((await app.makeNotifier({ fetch: async () => { throw new DOMException('PRIVATE TIMEOUT', 'TimeoutError'); } })(app.receipt)).reason, 'RESEND_TIMEOUT');
+  app.setFailMarker(true);
+  assert.equal((await app.makeNotifier()(app.receipt)).reason, 'EMAIL_ACCEPTANCE_SAVE');
+  app.setFailMarker(false);
+  app.metadata.get(app.receipt.uploads[0]).digest = 'changed';
+  assert.equal((await app.makeNotifier()(app.receipt)).reason, 'PHOTO_CHECK');
+});
+
+test('surrounding whitespace is removed from the key only for the provider request', async () => {
+  const app = setup(); app.env.RESEND_API_KEY = '  TEST_SECRET\n';
+  const result = await app.makeNotifier({ fetch: async (_url, options) => {
+    assert.equal(options.headers.Authorization, 'Bearer TEST_SECRET');
+    return Response.json({ id: 'accepted-test' });
+  } })(app.receipt);
+  assert.equal(result.status, 'accepted');
 });

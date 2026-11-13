@@ -284,6 +284,31 @@ export async function initShop({ document, window, fetch: request = window.fetch
       needs_review: 'The email retry window has ended. The owner must check this order in Resend before resending. The test order and photos remain saved.',
     };
     $('order-email-status').textContent = messages[notification.status] || 'Order email status could not be confirmed.';
+    const reasons = {
+      RECEIPT_READ: 'The saved order could not be read for email.',
+      RECEIPT_CHECK: 'The saved order could not be verified for email.',
+      EMAIL_RECORD_READ: 'The saved email progress could not be read.',
+      EMAIL_RECORD_SAVE: 'Email progress could not be saved before sending.',
+      EMAIL_RECORD_CHECK: 'The saved email details could not be verified.',
+      PHOTO_READ: 'The saved photo could not be read for the attachment.',
+      PHOTO_CHECK: 'The saved photo could not be verified for the attachment.',
+      EMAIL_PREPARE: 'The order email could not be prepared.',
+      RESEND_CONNECTION: 'The server could not complete its connection to Resend.',
+      RESEND_TIMEOUT: 'The Resend request timed out; sending is not yet confirmed.',
+      RESEND_AUTH: 'Resend did not accept the configured API key.',
+      RESEND_PERMISSION: 'Resend refused sending. Check the sending domain and API-key permissions.',
+      RESEND_CONFLICT: 'Resend reported a conflict with an earlier email attempt.',
+      RESEND_VALIDATION: 'Resend rejected the email details.',
+      RESEND_RATE_LIMIT: 'Resend temporarily limited email requests. Wait before retrying.',
+      RESEND_QUOTA: 'The Resend email allowance has been reached. Check usage before retrying.',
+      RESEND_UNAVAILABLE: 'Resend is temporarily unable to process this email.',
+      RESEND_REJECTED: 'Resend rejected this email request.',
+      RESEND_RESPONSE: 'Resend returned no usable sending confirmation.',
+      EMAIL_ACCEPTANCE_SAVE: 'Resend accepted the email, but saving that confirmation failed. A retry will check the same email.',
+    };
+    if (notification.status === 'retryable' && Object.hasOwn(reasons, notification.reason)) {
+      $('order-email-status').textContent += ` ${reasons[notification.reason]} Support code: ${notification.reason}.`;
+    }
     if (reference && ['retryable', 'not_configured'].includes(notification.status)) {
       if (!pendingEmails.some(item => item.checkoutId === reference.checkoutId)) pendingEmails.push(reference);
     } else if (reference && ['accepted', 'needs_review'].includes(notification.status)) {
