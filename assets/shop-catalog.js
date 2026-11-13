@@ -188,6 +188,14 @@ export function receiptText(receipt) {
     `Sandbox total: $${money(totals.totalCents)} USD`,
     `Ships from: ${ORIGIN_ZIP}`,
     `Destination ZIP: ${selection.destinationZip}`,
+    ...(receipt.shippingAddress ? [
+      'Ship to (confirmed in PayPal):',
+      receipt.shippingAddress.name,
+      receipt.shippingAddress.addressLine1,
+      ...(receipt.shippingAddress.addressLine2 ? [receipt.shippingAddress.addressLine2] : []),
+      `${receipt.shippingAddress.city}, ${receipt.shippingAddress.region} ${receipt.shippingAddress.postalCode}`,
+      receipt.shippingAddress.countryCode,
+    ] : []),
     'Sales tax: not calculated in Sandbox',
     receipt.stored ? 'Test record saved securely on the server. No fulfillment.' : 'Browser-only test receipt. No order stored on the server.',
   ].join('\n');

@@ -104,6 +104,14 @@ test('large photo orders split into numbered emails with no more than five attac
   }
 });
 
+test('bounded background attempts resume multipart attachments without changing the payload', async () => {
+  const app = setup({ count: 6 });
+  const notify = app.makeNotifier({ maxParts: 1 });
+  assert.deepEqual(await notify(app.receipt), { status: 'retryable', acceptedParts: 1, totalParts: 2, reason: 'EMAIL_MORE_PARTS' });
+  assert.deepEqual(await notify(app.receipt), { status: 'accepted', acceptedParts: 2, totalParts: 2 });
+  assert.equal(app.deliveries.size, 2); assert.equal(app.requests.length, 2);
+});
+
 test('a shared ornament photo is attached once with the number of copies in the owner email', async () => {
   const app = setup({ count: 1 });
   app.receipt.selection = normalizeSelection({ ...app.receipt.selection, quantity: 5, photoMode: 'same' });

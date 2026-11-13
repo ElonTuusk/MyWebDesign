@@ -305,6 +305,7 @@ export async function initShop({ document, window, fetch: request = window.fetch
       RESEND_REJECTED: 'Resend rejected this email request.',
       RESEND_RESPONSE: 'Resend returned no usable sending confirmation.',
       EMAIL_ACCEPTANCE_SAVE: 'Resend accepted the email, but saving that confirmation failed. A retry will check the same email.',
+      EMAIL_MORE_PARTS: 'The remaining photo attachments are queued for the next email attempt.',
     };
     if (notification.status === 'retryable' && Object.hasOwn(reasons, notification.reason)) {
       $('order-email-status').textContent += ` ${reasons[notification.reason]} Support code: ${notification.reason}.`;

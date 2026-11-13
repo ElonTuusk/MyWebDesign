@@ -1,7 +1,9 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { verifyPhotos } from './photos.mjs';
+import { OrderError, verifyOrder, saveCompletedOrder } from './order-records.mjs';
+import { enqueueRecovery } from './order-recovery.mjs';
 import {
-  SANDBOX_CLIENT_ID, normalizeSelection, quote, paypalOrder, completedCapture, money,
+  SANDBOX_CLIENT_ID, normalizeSelection, quote, paypalOrder,
 } from '../../assets/shop-catalog.js';
 
 // Intentionally no live endpoint, environment switch, or arbitrary merchant ID.
@@ -12,9 +14,7 @@ const ORDER_ID = /^[A-Z0-9]{8,32}$/;
 const TTL_MS = 3 * 60 * 60 * 1000;
 const hash = value => createHash('sha256').update(value).digest('hex');
 
-export class CheckoutError extends Error {
-  constructor(message, status = 400) { super(message); this.status = status; }
-}
+export class CheckoutError extends OrderError {}
 function json(value, status = 200) {
   return Response.json(value, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
 }
@@ -33,10 +33,10 @@ export function sandboxAllowed(request, env) {
     (!env.PAYPAL_SANDBOX_CLIENT_ID || env.PAYPAL_SANDBOX_CLIENT_ID === SANDBOX_CLIENT_ID);
 }
 
-export function paypalClient({ secret, fetch: request = fetch }) {
+export function paypalClient({ secret, fetch: request = fetch, timeoutMs = 12000 }) {
   async function accessToken() {
     const response = await request(`${PAYPAL_BASE}/v1/oauth2/token`, {
-      method: 'POST', signal: AbortSignal.timeout(12000),
+      method: 'POST', signal: AbortSignal.timeout(timeoutMs),
       headers: {
         Authorization: `Basic ${Buffer.from(`${SANDBOX_CLIENT_ID}:${secret}`).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -50,12 +50,12 @@ export function paypalClient({ secret, fetch: request = fetch }) {
   async function call(path, { method = 'GET', body, requestId } = {}) {
     const token = await accessToken();
     const response = await request(`${PAYPAL_BASE}${path}`, {
-      method, signal: AbortSignal.timeout(12000),
+      method, signal: AbortSignal.timeout(timeoutMs),
       headers: {
         Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation',
         ...(requestId ? { 'PayPal-Request-Id': requestId } : {}),
       },
-      ...(body ? { body: JSON.stringify(body) } : {}),
+      ...(body ? { body: typeof body === 'string' ? body : JSON.stringify(body) } : {}),
     });
     if (!response.ok) throw new CheckoutError('PayPal Sandbox could not confirm this request. Retry the same test confirmation.', 502);
     return response.json();
@@ -66,22 +66,20 @@ export function paypalClient({ secret, fetch: request = fetch }) {
     capture: (id, checkoutId) => call(`/v2/checkout/orders/${id}/capture`, {
       method: 'POST', requestId: hash(`capture:${checkoutId}`).slice(0, 32), body: {},
     }),
+    verifyWebhook: ({ eventText, headers, webhookId }) => {
+      const envelope = {
+        transmission_id: headers.get('paypal-transmission-id'),
+        transmission_time: headers.get('paypal-transmission-time'),
+        cert_url: headers.get('paypal-cert-url'),
+        auth_algo: headers.get('paypal-auth-algo'),
+        transmission_sig: headers.get('paypal-transmission-sig'),
+        webhook_id: webhookId,
+      };
+      // Preserve the event's original JSON bytes inside the verification request.
+      const body = `${JSON.stringify(envelope).slice(0, -1)},"webhook_event":${eventText}}`;
+      return call('/v1/notifications/verify-webhook-signature', { method: 'POST', body });
+    },
   };
-}
-
-function verifyOrder(order, draft, orderID) {
-  const units = order?.purchase_units;
-  const unit = units?.[0];
-  if (order?.id !== orderID || order.intent !== 'CAPTURE' || units?.length !== 1 ||
-      unit.custom_id !== draft.checkoutId || unit.amount?.currency_code !== 'USD' ||
-      unit.amount.value !== money(draft.totals.totalCents) ||
-      unit.amount.breakdown?.item_total?.value !== money(draft.totals.subtotalCents) ||
-      unit.amount.breakdown?.shipping?.value !== money(draft.totals.shippingCents)) {
-    throw new CheckoutError('The Sandbox order does not match the saved configuration and total.', 409);
-  }
-  if (unit.shipping?.address?.country_code !== 'US') {
-    throw new CheckoutError('Choose a US shipping address in PayPal Sandbox.', 422);
-  }
 }
 
 export function createCheckoutHandler({ env, getStore, paypal, notify, now = () => new Date() }) {
@@ -131,7 +129,7 @@ export function createCheckoutHandler({ env, getStore, paypal, notify, now = () 
           // Persist the frozen configuration BEFORE contacting PayPal. Storage failure fails closed.
           const createdAt = now();
           const candidate = {
-            version: 1, mode: 'sandbox', fulfillment: 'disabled', checkoutId: input.checkoutId,
+            version: 2, mode: 'sandbox', fulfillment: 'disabled', checkoutId: input.checkoutId,
             tokenHash: hash(input.token), selectionHash, selection, totals: quote(selection),
             uploads,
             createdAt: createdAt.toISOString(), expiresAt: new Date(+createdAt + TTL_MS).toISOString(),
@@ -141,8 +139,12 @@ export function createCheckoutHandler({ env, getStore, paypal, notify, now = () 
         }
         authorize(draft, input.token);
         if (draft.selectionHash !== selectionHash) throw new CheckoutError('This checkout reference already belongs to a different configuration.', 409);
+        await enqueueRecovery(store, input.checkoutId, now);
         const existing = await store.get(orderKey, { type: 'json' });
-        if (existing) return json({ id: existing.paypalOrderId, totals: draft.totals });
+        if (existing) {
+          await store.setJSON(`paypal-orders/${existing.paypalOrderId}`, { checkoutId: input.checkoutId }, { onlyIfNew: true });
+          return json({ id: existing.paypalOrderId, totals: draft.totals });
+        }
         if (+now() > Date.parse(draft.expiresAt)) throw new CheckoutError('This test checkout has expired. Start a new configuration.', 410);
         const order = await paypal.create(draft.selection, input.checkoutId);
         if (!ORDER_ID.test(order?.id || '') || !['CREATED', 'APPROVED', 'PAYER_ACTION_REQUIRED'].includes(order.status)) {
@@ -151,6 +153,7 @@ export function createCheckoutHandler({ env, getStore, paypal, notify, now = () 
         await store.setJSON(orderKey, { paypalOrderId: order.id }, { onlyIfNew: true });
         const saved = await store.get(orderKey, { type: 'json' });
         if (saved?.paypalOrderId !== order.id) throw new CheckoutError('Sandbox order persistence needs verification.', 409);
+        await store.setJSON(`paypal-orders/${order.id}`, { checkoutId: input.checkoutId }, { onlyIfNew: true });
         return json({ id: order.id, totals: draft.totals }, 201);
       }
 
@@ -159,6 +162,7 @@ export function createCheckoutHandler({ env, getStore, paypal, notify, now = () 
       if (!ORDER_ID.test(input.orderID || '') || savedOrder?.paypalOrderId !== input.orderID) {
         throw new CheckoutError('This order does not belong to the current Sandbox checkout.', 409);
       }
+      await enqueueRecovery(store, input.checkoutId, now);
       const existingReceipt = await store.get(receiptKey, { type: 'json' });
       if (existingReceipt) return receiptResponse(existingReceipt);
       // Read PayPal before capturing. This also recovers a completed capture after a timeout or failed storage write.
@@ -170,24 +174,11 @@ export function createCheckoutHandler({ env, getStore, paypal, notify, now = () 
         try { order = await paypal.capture(input.orderID, input.checkoutId); }
         catch { order = await paypal.get(input.orderID); }
       }
-      let capture;
-      try { capture = completedCapture(order, input.orderID, draft.totals); }
-      catch (error) { throw new CheckoutError(error.message, 409); }
-      const receipt = {
-        version: 1, mode: 'sandbox', fulfillment: 'disabled', stored: true,
-        checkoutId: input.checkoutId, paypalOrderId: input.orderID, captureId: capture.id,
-        selection: draft.selection, totals: draft.totals, completedAt: now().toISOString(),
-        uploads: draft.uploads || [],
-        paypalShippingZip: order.purchase_units[0].shipping?.address?.postal_code || null,
-      };
-      // Immutable completion: concurrent callbacks cannot overwrite a verified receipt or duplicate a record.
-      await store.setJSON(receiptKey, receipt, { onlyIfNew: true });
-      const savedReceipt = await store.get(receiptKey, { type: 'json' });
-      if (!savedReceipt) throw new CheckoutError('The payment was checked but its test record was not saved. Retry confirmation.', 503);
+      const savedReceipt = await saveCompletedOrder({ store, draft, order, orderID: input.orderID, now });
       return receiptResponse(savedReceipt);
     } catch (error) {
       // Never return raw PayPal bodies, bearer tokens, credentials, or customer data in errors.
-      return json({ error: error instanceof CheckoutError ? error.message : 'Sandbox service is temporarily unavailable. Retry confirmation for the same order.' }, error instanceof CheckoutError ? error.status : 503);
+      return json({ error: error instanceof OrderError ? error.message : 'Sandbox service is temporarily unavailable. Retry confirmation for the same order.' }, error instanceof OrderError ? error.status : 503);
     }
   };
 }

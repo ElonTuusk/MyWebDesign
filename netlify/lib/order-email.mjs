@@ -18,7 +18,7 @@ function settings(env) {
 
 // Only server environment settings select the recipient. Customer form input cannot
 // redirect photos, change headers, or send email before a verified stored payment.
-export function createOrderNotifier({ env, getStore, fetch: request = fetch, now = () => new Date() }) {
+export function createOrderNotifier({ env, getStore, fetch: request = fetch, now = () => new Date(), timeoutMs = 15000, maxParts = Infinity }) {
   async function notify(receiptReference) {
     const config = settings(env);
     if (!config) return { status: 'not_configured', acceptedParts: 0 };
@@ -70,11 +70,13 @@ export function createOrderNotifier({ env, getStore, fetch: request = fetch, now
       if (!job || job.receiptDigest !== digest(JSON.stringify(receipt))) throw new Error('Changed receipt');
       const totalParts = job.parts.length;
       // Bound this stage so a delayed email cannot hold payment confirmation open.
-      const signal = AbortSignal.timeout(15000);
+      const signal = AbortSignal.timeout(timeoutMs);
+      let sentThisRun = 0;
       for (let part = 0; part < totalParts; part++) {
         const partKey = `${jobKey}/parts/${part}`;
         reason = 'EMAIL_RECORD_READ';
         if (await store.get(partKey, { type: 'json' })) { acceptedParts++; continue; }
+        if (sentThisRun >= maxParts) return { status: 'retryable', acceptedParts, totalParts, reason: 'EMAIL_MORE_PARTS' };
         const age = +now() - timestamp(job.createdAt);
         // Resend deduplicates for 24 hours. Never blindly resend an uncertain
         // attempt beyond that window; an owner must reconcile it in Resend.
@@ -143,6 +145,7 @@ export function createOrderNotifier({ env, getStore, fetch: request = fetch, now
         await store.setJSON(partKey, { providerId: result.id, acceptedAt: now().toISOString() }, { onlyIfNew: true });
         if (!(await store.get(partKey, { type: 'json' }))?.providerId) throw new Error('Email result not saved');
         acceptedParts++;
+        sentThisRun++;
       }
       // API acceptance is not proof of delivery to Gmail; the UI says so.
       return { status: 'accepted', acceptedParts, totalParts };

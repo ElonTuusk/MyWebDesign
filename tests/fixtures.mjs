@@ -15,7 +15,10 @@ export function approvedOrder(status = 'APPROVED', captureStatus = 'COMPLETED') 
         item_total: { currency_code: 'USD', value: '60.00' },
         shipping: { currency_code: 'USD', value: '10.00' },
       } },
-      shipping: { address: { country_code: 'US', postal_code: '65336' } },
+      shipping: { name: { full_name: 'Sandbox Buyer' }, address: {
+        address_line_1: '123 Test Street', address_line_2: 'Unit 2',
+        admin_area_2: 'Knob Noster', admin_area_1: 'MO', country_code: 'US', postal_code: '65336',
+      } },
       ...(status === 'COMPLETED' ? { payments: { captures: [{
         id: 'TESTCAPTURE123456', status: captureStatus,
         amount: { currency_code: 'USD', value: '70.00' },
