@@ -28,7 +28,13 @@ function setup(options = {}) {
       order = approvedOrder('COMPLETED');
       if (options.pending) order.purchase_units[0].payments.captures[0].status = 'PENDING';
       if (options.captureTimeout) throw new Error('Response lost after PayPal captured');
-      return structuredClone(order);
+      const response = structuredClone(order);
+      if (options.partialCaptureResponse) {
+        delete response.intent;
+        delete response.purchase_units[0].amount;
+        delete response.purchase_units[0].custom_id;
+      }
+      return response;
     },
   };
   const handler = createCheckoutHandler({ env: { PAYPAL_SANDBOX_CLIENT_SECRET: 'TEST_ONLY', ...options.env }, getStore: () => store, paypal, now: options.now, notify: options.notify });
@@ -91,6 +97,14 @@ test('capture response timeout is recovered from PayPal without a second payment
   const app = setup({ captureTimeout: true }); await app.create();
   assert.equal((await app.capture()).status, 200);
   assert.equal(app.calls.capture, 1);
+});
+test('a minimal PayPal capture response is followed by a full order read before saving', async () => {
+  const app = setup({ partialCaptureResponse: true }); await app.create();
+  const response = await app.capture();
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).receipt.shippingAddress.addressLine1, '123 Test Street');
+  assert.equal(app.calls.capture, 1);
+  assert.equal(app.calls.get, 2);
 });
 test('capture requires possession of the checkout token and its matching order', async () => {
   const app = setup(); await app.create();

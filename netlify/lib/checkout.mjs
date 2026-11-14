@@ -174,6 +174,11 @@ export function createCheckoutHandler({ env, getStore, paypal, notify, now = () 
         try { order = await paypal.capture(input.orderID, input.checkoutId); }
         catch { order = await paypal.get(input.orderID); }
       }
+      // Capture responses can contain payment details without the complete
+      // order representation. Re-read it rather than dropping the paid receipt
+      // or weakening the identity, amount, and shipping checks.
+      try { verifyOrder(order, draft, input.orderID); }
+      catch { order = await paypal.get(input.orderID); }
       const savedReceipt = await saveCompletedOrder({ store, draft, order, orderID: input.orderID, now });
       return receiptResponse(savedReceipt);
     } catch (error) {
