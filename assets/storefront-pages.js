@@ -1,0 +1,87 @@
+// Public product-page content. Checkout prices and validation live in shop-catalog.js.
+export const PRODUCT_PAGES = [
+  {
+    id: 'organizer', kind: 'kit', kinds: ['kit', 'tray', 'block', 'tag'],
+    path: 'bench-organizer.html', name: 'Modular Reloading Bench Organizer',
+    category: 'Bench organization', unit: 'complete tower kit', type: 'physical',
+    description: 'A place for every tray, die set, and accessory. Connect modules side by side or build a vertical tower to make the most of your bench.',
+    image: 'RTOTower1.JPG', alt: 'Modular reloading bench organizer arranged as a vertical tower',
+    detailsTitle: 'Build a setup that fits your bench',
+    details: [
+      'The complete kit includes six customer-selected trays, matching caliber name tags, three tower blocks, and assembly hardware.',
+      'Choose cartridge loading blocks, reloading die holders, or divided accessory trays.',
+      'Die holders fit two die sets and include two independently selected name tags. Other trays include one tag.',
+      'Choose popular calibers or enter custom name-tag text. Individual trays, tower blocks, and replacement tags are also available below.',
+    ],
+    configureTitle: 'Configure your organizer',
+    configureIntro: 'Choose a complete kit or an individual module, then make it yours.',
+    gallery: [
+      ['RTOTower1.JPG', 'Vertical tower'], ['RTOTower.JPG', 'Horizontal layout'],
+      ['RTOTower2.JPG', 'Module options'], ['RTOTower3.JPG', 'Die holder detail'],
+      ['RTOTower4.JPG', 'Accessory tray detail'], ['RTOTower5.JPG', 'Cartridge block detail'],
+    ],
+  },
+  {
+    id: 'cube', kind: 'cube', kinds: ['cube'], path: 'lithophane-cube-lamp.html',
+    name: 'Personalized 5-Photo Lithophane Cube Lamp', category: 'Photo gifts',
+    unit: 'per lamp', type: 'physical', image: 'assets/products/lithophane-cube.webp',
+    alt: 'Illuminated photo cube lamp with a black frame and personalized photo panels',
+    description: 'Five favorite photos, one glowing keepsake. Turn your memories into a personalized photo cube lamp with an installed LED bulb.',
+    detailsTitle: 'Your photos, brought to light',
+    details: [
+      'Personalize each lamp with five photos. An installed LED bulb is included.',
+      'Upload JPG, PNG, or WebP photos up to 10 MB each.',
+      'For multiple lamps, select five photos per lamp, grouped in order. Up to four lamps per order.',
+      'Use the notes field for photo placement or other personalization details.',
+    ],
+    configureTitle: 'Personalize your cube lamp',
+    configureIntro: 'Choose your quantity and upload the five photos for each lamp.',
+  },
+  {
+    id: 'ornament', kind: 'ornament', kinds: ['ornament'], path: 'photo-ornament.html',
+    name: 'Personalized Light-Up Photo Ornament', category: 'Photo gifts',
+    unit: 'per ornament', type: 'physical', image: 'assets/products/photo-ornament.webp',
+    alt: 'Round light-up ornament with a personalized photo portrait',
+    description: 'Turn a special photo into a glowing ornament. Make one for yourself or share a favorite memory with family and friends.',
+    detailsTitle: 'One memory. As many copies as you need.',
+    details: [
+      'The light and replaceable batteries are included.',
+      'Use the same photo for every ornament, or choose a different photo for each one.',
+      'Upload JPG, PNG, or WebP photos up to 10 MB each.',
+      'Choose up to 20 ornaments per order and add any personalization notes below.',
+    ],
+    configureTitle: 'Personalize your ornaments',
+    configureIntro: 'Choose how many you want, then use one shared photo or a different photo for each ornament.',
+  },
+  {
+    id: 'card', kind: 'card', kinds: ['card'], path: 'custom-business-card.html',
+    name: 'Custom 3D-Printed Business Card', category: 'Business essentials',
+    unit: 'per card', type: 'physical', image: 'assets/products/business-card.webp',
+    alt: 'Mini3DCreations business card with raised lettering and a blue border',
+    description: 'Make an introduction they can hold on to. Customize a printed PLA business card with your wording and colors.',
+    detailsTitle: 'Make it your own',
+    details: [
+      'Enter the exact business name, contact details, and wording you want printed.',
+      'Choose separate colors for the lettering, background, and border.',
+      'An optional logo can be requested in your personalization notes.',
+      'Each copy in an order uses the same wording and color selections.',
+    ],
+    configureTitle: 'Customize your business card',
+    configureIntro: 'Add your wording, choose your colors, and tell us about any logo request.',
+  },
+  {
+    id: 'stl', kind: 'stl', kinds: ['stl'], path: 'hormone-monster-stl.html',
+    name: 'Hormone Monster Figurine STL', category: 'Digital designs',
+    unit: 'digital download', type: 'digital', image: 'assets/products/hormone-monster-stl.webp',
+    alt: 'Gray render of the horned Hormone Monster figurine model on a circular base',
+    description: 'A figurine model for your next resin-printing project. This listing is for a digital STL file, with no physical item shipped.',
+    detailsTitle: 'About this digital file',
+    details: [
+      'The download is an STL model packaged in one ZIP file.',
+      'Designed for resin 3D printing. A 3D printer and printing materials are not included.',
+      'The download is not available yet. Purchasing will open when the file is ready.',
+    ],
+  },
+];
+
+export const pageForKind = kind => PRODUCT_PAGES.find(page => page.kinds.includes(kind));

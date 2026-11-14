@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Browse Mini3DCreations photo gifts, custom business cards, digital STL files, and modular bench organizers. Choose a product to see its details and personalize your order.">
+  <title>Shop | Mini3DCreations</title>
+  <link rel="stylesheet" href="assets/shop.css">
+  <script type="module" src="assets/catalog-browse.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="container navigation" aria-label="Main navigation">
+      <a class="brand" href="index.html">Mini3D<span>Creations</span></a>
+      <div class="nav-links"><a href="index.html">Home</a><a href="shop.html" aria-current="page">Shop</a><a href="index.html#quote">Custom orders</a></div>
+    </nav>
+  </header>
+  <div class="preview-banner">Shop preview <span aria-hidden="true">·</span> Sandbox test orders only. Real payments are off.</div>
+  <main>
+    <div id="saved-order-notice" class="container saved-order-notice" role="status" hidden></div>
+    <section id="products" class="catalog-section" aria-labelledby="catalog-heading">
+      <div class="container">
+        <div class="catalog-heading-row">
+          <div>
+            <p class="eyebrow">Made by Mini3DCreations</p>
+            <h1 id="catalog-heading">Shop our creations.</h1>
+            <p class="intro">Personalized photo gifts, practical prints, and digital designs.</p>
+          </div>
+        </div>
+        <div class="catalog-toolbar">
+          <div id="catalog-filters" class="catalog-filters" role="group" aria-label="Filter products by type" hidden>
+            <button type="button" class="catalog-filter" data-filter="all" aria-pressed="true">All products</button>
+            <button type="button" class="catalog-filter" data-filter="physical" aria-pressed="false">Physical items</button>
+            <button type="button" class="catalog-filter" data-filter="digital" aria-pressed="false">Digital files</button>
+          </div>
+          <p id="catalog-count" class="catalog-count" role="status" aria-live="polite">5 products</p>
+        </div>
+        <div id="catalog-grid" class="catalog-grid">
+          <article class="catalog-card" data-product-type="physical" data-product-id="organizer">
+            <a class="catalog-product-link" href="bench-organizer.html">
+              <div class="catalog-image"><img src="RTOTower1.JPG" alt="Modular reloading bench organizer arranged as a vertical tower" width="600" height="600"></div>
+              <div class="catalog-card-body">
+                <h2>Modular Reloading Bench Organizer</h2>
+                <p class="catalog-price">$60.00 <span>complete kit</span></p>
+                <p class="catalog-item-type">Bench organization</p>
+              </div>
+            </a>
+          </article>
+          <article class="catalog-card" data-product-type="physical" data-product-id="cube">
+            <a class="catalog-product-link" href="lithophane-cube-lamp.html">
+              <div class="catalog-image"><img src="assets/products/lithophane-cube.webp" alt="Illuminated photo cube lamp with a black frame and personalized photo panels" width="600" height="600"></div>
+              <div class="catalog-card-body">
+                <h2>Personalized 5-Photo Lithophane Cube Lamp</h2>
+                <p class="catalog-price">$45.00</p>
+                <p class="catalog-item-type">Photo gifts</p>
+              </div>
+            </a>
+          </article>
+          <article class="catalog-card" data-product-type="physical" data-product-id="ornament">
+            <a class="catalog-product-link" href="photo-ornament.html">
+              <div class="catalog-image"><img src="assets/products/photo-ornament.webp" alt="Round light-up ornament with a personalized photo portrait" width="600" height="600" loading="lazy"></div>
+              <div class="catalog-card-body">
+                <h2>Personalized Light-Up Photo Ornament</h2>
+                <p class="catalog-price">$12.00</p>
+                <p class="catalog-item-type">Photo gifts</p>
+              </div>
+            </a>
+          </article>
+          <article class="catalog-card" data-product-type="physical" data-product-id="card">
+            <a class="catalog-product-link" href="custom-business-card.html">
+              <div class="catalog-image"><img src="assets/products/business-card.webp" alt="Mini3DCreations business card with raised lettering and a blue border" width="600" height="600" loading="lazy"></div>
+              <div class="catalog-card-body">
+                <h2>Custom 3D-Printed Business Card</h2>
+                <p class="catalog-price">$2.00</p>
+                <p class="catalog-item-type">Business essentials</p>
+              </div>
+            </a>
+          </article>
+          <article class="catalog-card" data-product-type="digital" data-product-id="stl">
+            <a class="catalog-product-link" href="hormone-monster-stl.html">
+              <div class="catalog-image"><img src="assets/products/hormone-monster-stl.webp" alt="Gray render of the horned Hormone Monster figurine model on a circular base" width="600" height="600" loading="lazy"></div>
+              <div class="catalog-card-body">
+                <h2>Hormone Monster Figurine STL</h2>
+                <p class="catalog-price">$4.00</p>
+                <p class="catalog-item-type">Digital download · Available soon</p>
+              </div>
+            </a>
+          </article>
+        </div>
+        <p class="catalog-note">Choose an item to see the details and make it yours. Physical orders ship for a flat $10.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="container footer"><span>Mini3DCreations · Custom parts. Practical solutions.</span><a href="index.html">Back to home</a></footer>
+</body>
+</html>
