@@ -1,5 +1,8 @@
+import { initSavedOrderNotice } from './saved-order.js';
+
 // The catalog remains readable with JavaScript disabled. Filtering is optional.
 export function initCatalog(document) {
+  initSavedOrderNotice(document, document.defaultView);
   const filters = document.getElementById('catalog-filters');
   const count = document.getElementById('catalog-count');
   const cards = [...document.querySelectorAll('#catalog-grid .catalog-card')];

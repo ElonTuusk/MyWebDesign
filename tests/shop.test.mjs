@@ -5,10 +5,13 @@ import { JSDOM } from 'jsdom';
 import { initShop } from '../assets/shop.js';
 import { normalizeSelection, quote } from '../assets/shop-catalog.js';
 import { approvedOrder, orderID } from './fixtures.mjs';
+import { renderProductPage } from '../scripts/render-products.mjs';
+import { pageForKind } from '../assets/storefront-pages.js';
 
-const html = await readFile(new URL('../shop.html', import.meta.url), 'utf8');
-async function setup({ server = false, fetch: api, pending, pendingEmails, denyStorage = false, url = 'https://deploy-preview-2--mini3dcreations.netlify.app/shop.html' } = {}) {
-  const dom = new JSDOM(html, { url });
+const catalogHtml = await readFile(new URL('../shop.html', import.meta.url), 'utf8');
+async function setup({ server = false, fetch: api, pending, pendingEmails, denyStorage = false, url, product = 'kit' } = {}) {
+  const page = pageForKind(product);
+  const dom = new JSDOM(renderProductPage(page), { url: url || `https://deploy-preview-2--mini3dcreations.netlify.app/${page.path}` });
   const { window } = dom;
   if (pending) window.sessionStorage.setItem('mini3d-sandbox-checkout-v1', JSON.stringify(pending));
   if (pendingEmails) window.sessionStorage.setItem('mini3d-sandbox-email-retries-v1', JSON.stringify(pendingEmails));
@@ -35,7 +38,7 @@ async function setup({ server = false, fetch: api, pending, pendingEmails, denyS
   return { dom, window, $, input, files, callbacks, rendered, start };
 }
 
-test('shop initializes six tray rows, one PayPal container and $70 default total', async () => {
+test('organizer page initializes six tray rows, one PayPal container and $70 default total', async () => {
   const app = await setup();
   assert.equal(app.window.document.querySelectorAll('.kit-tray').length, 6);
   assert.equal(app.window.document.querySelectorAll('#paypal-sandbox-button').length, 1);
@@ -212,10 +215,11 @@ test('blocked session storage does not prevent the Sandbox button from rendering
   assert.equal(app.rendered, true);
   app.dom.window.close();
 });
-test('catalog purchases remain on-site and preserve business card details through checkout', async () => {
-  const app = await setup();
-  assert.equal(app.window.document.querySelectorAll('#catalog-grid a[href*="etsy.com"]').length, 0);
-  app.window.document.querySelector('.catalog-action[data-shop-product="card"]').click();
+test('business card catalog link opens its product page and preserves personalization through checkout', async () => {
+  const catalog = new JSDOM(catalogHtml);
+  assert.equal(catalog.window.document.querySelector('[data-product-id="card"] a').getAttribute('href'), pageForKind('card').path);
+  catalog.window.close();
+  const app = await setup({ product: 'card' });
   assert.equal(app.$('product').value, 'card');
   assert.equal(app.$('business-card-fields').hidden, false);
   app.input('customer-email', 'customer@example.com');
@@ -233,27 +237,29 @@ test('catalog purchases remain on-site and preserve business card details throug
   app.dom.window.close();
 });
 test('digital file has no payment button and photo products show their upload requirements', async () => {
-  const app = await setup();
-  app.input('product', 'stl');
-  assert.equal(app.$('paypal-sandbox-button').hidden, true);
-  assert.equal(app.$('shipping-fields').hidden, true);
-  assert.equal(app.$('total').textContent, '$4.00 USD');
-  await assert.rejects(() => app.callbacks.createOrder({}, {}), /not available/);
-  app.input('product', 'cube');
+  const digital = new JSDOM(renderProductPage(pageForKind('stl')));
+  assert.equal(digital.window.document.getElementById('order-form'), null);
+  assert.equal(digital.window.document.getElementById('paypal-sandbox-button'), null);
+  assert.match(digital.window.document.getElementById('product-display-price').textContent, /\$4.00/);
+  assert.match(digital.window.document.querySelector('.digital-availability').textContent, /not available for purchase/);
+  digital.window.close();
+  const app = await setup({ product: 'cube' });
   assert.equal(app.$('photo-fields').hidden, false);
   assert.equal(app.$('paypal-sandbox-button').hidden, false);
   assert.match(app.$('photo-instructions').textContent, /5 photos/);
   app.input('quantity', '2');
   assert.match(app.$('photo-instructions').textContent, /10 photos/);
-  app.input('product', 'ornament');
-  assert.match(app.$('photo-instructions').textContent, /one photo.*all 2 ornaments/);
-  app.$('ornament-photo-different').click();
-  assert.match(app.$('photo-instructions').textContent, /2 photos/);
   app.dom.window.close();
+  const ornament = await setup({ product: 'ornament' });
+  ornament.input('quantity', '2');
+  assert.match(ornament.$('photo-instructions').textContent, /one photo.*all 2 ornaments/);
+  ornament.$('ornament-photo-different').click();
+  assert.match(ornament.$('photo-instructions').textContent, /2 photos/);
+  ornament.dom.window.close();
 });
 
 test('ornament photo choices change upload requirements and preserve a selected photo when quantity changes', async () => {
-  const app = await setup({ server: true });
+  const app = await setup({ server: true, product: 'ornament' });
   app.input('product', 'ornament'); app.input('quantity', '5');
   app.input('shipping-zip', '65336'); app.input('customer-email', 'customer@example.com');
   app.files([new app.window.File(['picture'], 'photo.jpg', { type: 'image/jpeg' })]);
@@ -276,7 +282,7 @@ test('ornament photo choices change upload requirements and preserve a selected 
 });
 
 test('file-size errors show beside uploads and survive the PayPal error callback', async () => {
-  const app = await setup({ server: true });
+  const app = await setup({ server: true, product: 'ornament' });
   app.input('product', 'ornament'); app.input('shipping-zip', '65336'); app.input('customer-email', 'customer@example.com');
   app.files([new app.window.File([new Uint8Array(10 * 1024 * 1024 + 1)], 'too-large.jpg', { type: 'image/jpeg' })]);
   assert.match(app.$('photo-selection-status').textContent, /Maximum 10 MB/);
@@ -289,7 +295,7 @@ test('file-size errors show beside uploads and survive the PayPal error callback
 
 test('a 4.4 MB shared photo is uploaded in smaller requests before creating the five-ornament order', async () => {
   const calls = [];
-  const app = await setup({ server: true, fetch: async (url, options) => {
+  const app = await setup({ server: true, product: 'ornament', fetch: async (url, options) => {
     if (url.endsWith('order-photos')) {
       const f = options.body;
       calls.push({ index: Number(f.get('chunkIndex')), count: Number(f.get('chunkCount')), size: f.get('file').size });
@@ -306,7 +312,7 @@ test('a 4.4 MB shared photo is uploaded in smaller requests before creating the 
   await app.callbacks.createOrder({}, {});
   assert.ok(calls.every(item => item.size <= 3 * 1024 * 1024));
   const pending = JSON.parse(app.window.sessionStorage.getItem('mini3d-sandbox-checkout-v1'));
-  const restored = await setup({ server: true, pending });
+  const restored = await setup({ server: true, pending, product: 'ornament' });
   assert.equal(restored.$('ornament-photo-same').checked, true);
   assert.match(restored.$('summary').textContent, /same photo on all 5 ornaments/);
   assert.equal(restored.$('configuration-fields').disabled, true);

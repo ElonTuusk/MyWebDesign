@@ -4,7 +4,7 @@ import { resolve, extname } from 'node:path';
 import './build.mjs';
 
 const publicRoot = resolve('dist');
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.png': 'image/png', '.svg': 'image/svg+xml' };
 const argument = name => process.argv[process.argv.indexOf(name) + 1];
 const port = Number(process.argv.includes('--port') ? argument('--port') : process.env.PORT || 5173);
 const host = process.argv.includes('--host') ? argument('--host') : '127.0.0.1';

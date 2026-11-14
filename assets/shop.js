@@ -3,13 +3,15 @@ import {
   normalizeSelection, descriptionLines, paypalOrder, completedCapture, receiptText,
   PRINT_COLORS, MAX_PHOTO_BYTES, PHOTO_CHUNK_BYTES, photoCount, isDigital,
 } from './shop-catalog.js';
+import { pageForKind } from './storefront-pages.js';
+import { SESSION_KEY, EMAIL_SESSION_KEY } from './saved-order.js';
 
 const ENDPOINT = '/.netlify/functions/sandbox-checkout';
-const SESSION_KEY = 'mini3d-sandbox-checkout-v1';
-const EMAIL_SESSION_KEY = 'mini3d-sandbox-email-retries-v1';
 
 export async function initShop({ document, window, fetch: request = window.fetch.bind(window) }) {
   const $ = id => document.getElementById(id);
+  if (!$('order-form')) return;
+  const productPage = pageForKind(document.body.dataset.productKind);
   const status = text => { $('paypal-sandbox-status').textContent = text; };
   let active = null;
   let serverReady = false;
@@ -20,7 +22,7 @@ export async function initShop({ document, window, fetch: request = window.fetch
   const kitRows = [];
   let selectedFiles = [];
   let retainedPhotos = [];
-  let previousKind = 'kit';
+  let previousKind = $('product').value;
   let checkoutError = '';
   const photoName = name => name.replace(/[\u0000-\u001f\u007f<>\\/]/g, '_').slice(0, 100);
 
@@ -177,6 +179,8 @@ export async function initShop({ document, window, fetch: request = window.fetch
       $('subtotal').textContent = `$${money(totals.subtotalCents)}`;
       $('shipping').textContent = `$${money(totals.shippingCents)}`;
       $('total').textContent = `$${money(totals.totalCents)} USD`;
+      if ($('product-display-price')) $('product-display-price').textContent = `$${money(totals.unitCents)}`;
+      if ($('product-price-unit')) $('product-price-unit').textContent = ({ kit: 'complete tower kit', tray: 'per tray', block: 'per block', tag: 'per name tag' })[value.kind] || productPage?.unit || '';
     } catch {
       $('subtotal').textContent = '—';
       $('total').textContent = 'Enter quantity 1–20';
@@ -324,7 +328,8 @@ export async function initShop({ document, window, fetch: request = window.fetch
     $('retry-order-email').disabled = true;
     $('order-email-status').textContent = 'Retrying the saved test order email. No new payment is being made…';
     try {
-      const result = await api({ action: 'capture', ...reference });
+      const { checkoutId, token, orderID } = reference;
+      const result = await api({ action: 'capture', checkoutId, token, orderID });
       if (!result.receipt?.stored || result.receipt.paypalOrderId !== reference.orderID) throw new Error('Unconfirmed receipt');
       showEmailResult(result.notification || { status: 'not_configured' }, reference);
     } catch { $('order-email-status').textContent = 'Order email could not be confirmed. Your saved test order and photos are unchanged; you can retry again.'; }
@@ -345,8 +350,9 @@ export async function initShop({ document, window, fetch: request = window.fetch
     $('retry-test-record').hidden = true;
     status('Confirming the Sandbox payment and saving its test record…');
     try {
-      const reference = { checkoutId: active.checkoutId, token: active.token, orderID: active.orderID };
-      const { receipt, notification } = await api({ action: 'capture', ...reference });
+      const reference = { checkoutId: active.checkoutId, token: active.token, orderID: active.orderID, kind: active.selection.kind };
+      const { kind, ...captureReference } = reference;
+      const { receipt, notification } = await api({ action: 'capture', ...captureReference });
       if (!receipt?.stored || receipt.paypalOrderId !== active.orderID) throw new Error('The test record could not be verified.');
       showReceipt(receipt);
       showEmailResult(notification, reference);
@@ -360,12 +366,6 @@ export async function initShop({ document, window, fetch: request = window.fetch
   for (const id of ['product', 'quantity', 'shipping-zip', 'customer-email', 'card-text', 'font-color', 'background-color', 'border-color', 'personalization-notes']) $(id).addEventListener('input', update);
   $('product').addEventListener('change', update);
   for (const id of ['ornament-photo-same', 'ornament-photo-different']) $(id).addEventListener('change', update);
-  for (const link of document.querySelectorAll('[data-shop-product]')) link.addEventListener('click', event => {
-    if (active) { event.preventDefault(); status('Finish or cancel the current checkout before choosing another product.'); return; }
-    $('product').value = link.dataset.shopProduct;
-    $('quantity').value = '1';
-    update();
-  });
   $('copy-test-receipt').addEventListener('click', async () => {
     try {
       if (!window.navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
@@ -381,6 +381,7 @@ export async function initShop({ document, window, fetch: request = window.fetch
     }
   });
   update();
+  if ($('product-configuration')) $('product-configuration').hidden = false;
 
   // This preview has one fixed, previously tested SANDBOX client ID. There is no live-mode switch.
   if (['mini3dcreations.com', 'www.mini3dcreations.com', 'mini3dcreations.netlify.app'].includes(window.location.hostname)) {
@@ -420,8 +421,14 @@ export async function initShop({ document, window, fetch: request = window.fetch
       const pending = JSON.parse(window.sessionStorage.getItem(SESSION_KEY));
       if (pending?.server && pending.orderID && pending.checkoutId && pending.token) {
         pending.selection = normalizeSelection(pending.selection);
-        restoreSelection(pending.selection);
         active = pending;
+        if (productPage && !productPage.kinds.includes(pending.selection.kind)) {
+          $('configuration-fields').disabled = true;
+          $('paypal-sandbox-button').hidden = true;
+          status('A saved Sandbox checkout for another product needs confirmation. Use the saved-checkout link above to return to it before starting a new payment.');
+          return;
+        }
+        restoreSelection(pending.selection);
         $('configuration-fields').disabled = true;
         $('retry-test-record').hidden = false;
         status('A prior Sandbox checkout needs confirmation. Retry that test confirmation before starting another.');
@@ -496,10 +503,4 @@ export async function initShop({ document, window, fetch: request = window.fetch
     if (!active) status('Ready for a Sandbox test checkout. Enter your destination ZIP before continuing.');
   } catch (error) { status(error.message); }
   return { buttons, selection, update };
-}
-
-if (typeof document !== 'undefined') {
-  initShop({ document, window }).catch(() => {
-    document.getElementById('paypal-sandbox-status').textContent = 'Checkout could not initialize. Please refresh the page.';
-  });
 }

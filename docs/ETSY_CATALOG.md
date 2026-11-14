@@ -26,3 +26,19 @@ The payment endpoint checks every expected photo exists and belongs to the same 
 Photo checkout requires the server's Sandbox secret and working Blobs storage. If unavailable, it fails before payment rather than pretending to store files. Resend can notify the configured owner with order details and the original photo attachments after a verified test capture is stored. Setup and recovery are documented in [ORDER_EMAIL.md](ORDER_EMAIL.md). No live payments or fulfillment are enabled.
 
 The storefront uses static HTML so product details and purchase links work without JavaScript. `assets/catalog-browse.js` progressively enables the All items / Physical items / Digital files filters. No eBay items or links are included.
+
+## Catalog and product pages
+
+The catalog at `shop.html` is a compact photo/name/price grid. It uses three columns on desktop and two on smaller screens. Each complete card is a normal link to a dedicated static product page; the catalog does not load PayPal or contain a configuration form.
+
+| Product | Page |
+| --- | --- |
+| Modular bench organizer and individual modules | `bench-organizer.html` |
+| Five-photo cube lamp | `lithophane-cube-lamp.html` |
+| Photo ornament | `photo-ornament.html` |
+| Custom business card | `custom-business-card.html` |
+| Digital figurine STL (unavailable) | `hormone-monster-stl.html` |
+
+Product content is maintained in `assets/storefront-pages.js`. The build renders the five pages from `templates/product.html` and `templates/product-configuration.html`, using the existing checkout prices. Each physical page opens with its own product selected; the organizer page also offers its tray, block, and tag variants. The unavailable digital listing has details but no order form or payment button.
+
+The existing browser session keys are retained. The catalog and product pages link back to a pending checkout, and visiting another product cannot silently replace it or start a new payment. Saved email retries retain their product kind for navigation; older retries without that field can still be managed through the organizer page.

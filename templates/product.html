@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="@@DESCRIPTION@@">
+  <title>@@NAME@@ | Mini3DCreations</title>
+  <link rel="stylesheet" href="assets/shop.css">
+  <script type="module" src="assets/product-page.js"></script>
+</head>
+<body data-product-kind="@@KIND@@">
+  <header class="site-header">
+    <nav class="container navigation" aria-label="Main navigation">
+      <a class="brand" href="index.html">Mini3D<span>Creations</span></a>
+      <div class="nav-links"><a href="index.html">Home</a><a href="shop.html">Shop</a><a href="index.html#quote">Custom orders</a></div>
+    </nav>
+  </header>
+  <div class="preview-banner">Shop preview <span aria-hidden="true">·</span> Sandbox test orders only. Real payments are off.</div>
+  <main>
+    <div id="saved-order-notice" class="container saved-order-notice" role="status" hidden></div>
+    <div class="container product-breadcrumb"><a href="shop.html"><span aria-hidden="true">←</span> All products</a><span aria-hidden="true">/</span><span>@@CATEGORY@@</span></div>
+    <section class="container product-overview" aria-labelledby="product-heading">
+      <div class="product-visuals">
+        <div class="product-main-photo"><img id="product-main-image" src="@@IMAGE@@" alt="@@ALT@@" width="720" height="720" fetchpriority="high"></div>
+        @@GALLERY@@
+      </div>
+      <div class="product-information">
+        <p class="eyebrow">@@CATEGORY@@</p>
+        <h1 id="product-heading">@@NAME@@</h1>
+        <p class="product-page-price"><span id="product-display-price">$@@PRICE@@</span> <span id="product-price-unit">@@UNIT@@</span></p>
+        <p class="product-lead">@@DESCRIPTION@@</p>
+        <p class="product-shipping">@@SHIPPING@@</p>
+        <div class="product-actions">@@ACTION@@</div>
+        <div class="product-details">
+          <h2>@@DETAILS_TITLE@@</h2>
+          <ul>@@DETAILS@@</ul>
+        </div>
+      </div>
+    </section>
+@@CONFIGURATION@@
+  </main>
+  <footer class="container footer"><span>Mini3DCreations · Custom parts. Practical solutions.</span><a href="shop.html">Back to the catalog</a></footer>
+</body>
+</html>

@@ -1,0 +1,61 @@
+    <section id="configure" class="configure-section">
+      <div class="container">
+        <p class="eyebrow">Made for you</p>
+        <h2 id="configure-heading">@@CONFIGURE_TITLE@@</h2>
+        <p class="intro">@@CONFIGURE_INTRO@@</p>
+        <noscript><p class="notice">Enable JavaScript to configure this product and load Sandbox checkout.</p></noscript>
+        <div id="product-configuration" class="config-grid" hidden>
+          <!-- html-validate-disable-next wcag/h32 -- PayPal SDK buttons submit checkout outside this configuration form. -->
+          <form id="order-form" class="panel config-panel">
+            <fieldset id="configuration-fields">
+              <legend class="sr-only">Product configuration</legend>
+              <div class="product-inputs">
+                <label id="product-choice"@@PRODUCT_CHOICE_HIDDEN@@>Choose your item<select id="product" name="product" class="field">@@OPTIONS@@</select></label>
+                <label>Quantity<input id="quantity" name="quantity" class="field" type="number" min="1" max="20" step="1" value="1" required></label>
+              </div>
+              <div id="kit-fields"><h3>Choose six trays</h3><p class="muted">Each kit includes three tower blocks and assembly hardware. Die holders include two name tags; other trays include one. For multiple kits, the same configuration applies to every kit.</p><div id="kit-rows"></div></div>
+              <div id="tray-fields" hidden><label>Tray type<select id="tray-type" name="tray-type" class="field"><option>Cartridge loading block</option><option>Reloading die holder</option><option>Divided accessory tray</option></select></label><div id="tray-label" class="tag-fields"></div></div>
+              <div id="tag-fields" hidden><div id="extra-label"></div></div>
+              <div id="personalization-fields" hidden>
+                <label>Contact email<input id="customer-email" name="customer-email" class="field" type="email" autocomplete="email" maxlength="254" disabled></label>
+                <div id="business-card-fields" hidden>
+                  <label>Exact wording for your card<textarea id="card-text" name="card-text" class="field" rows="4" maxlength="500" placeholder="Business name, contact details, and any other text" disabled></textarea></label>
+                  <div class="color-fields">
+                    <label>Lettering color<select id="font-color" class="field" disabled></select></label>
+                    <label>Background color<select id="background-color" class="field" disabled></select></label>
+                    <label>Border color<select id="border-color" class="field" disabled></select></label>
+                  </div>
+                </div>
+                <label>Personalization notes (optional)<textarea id="personalization-notes" name="personalization-notes" class="field" rows="3" maxlength="500" placeholder="Photo placement, logo description, or other details" disabled></textarea></label>
+                <div id="photo-fields" hidden>
+                  <fieldset id="ornament-photo-options" class="photo-options" hidden>
+                    <legend>Photos for your ornaments</legend>
+                    <label class="photo-option"><input id="ornament-photo-same" type="radio" name="ornament-photo-mode" value="same" checked disabled>Use the same photo for every ornament</label>
+                    <label class="photo-option"><input id="ornament-photo-different" type="radio" name="ornament-photo-mode" value="different" disabled>Use a different photo for each ornament</label>
+                  </fieldset>
+                  <label for="photo-files" id="photo-label">Your photos</label>
+                  <p id="photo-instructions" class="muted" aria-live="polite"></p>
+                  <input id="photo-files" class="field" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-instructions photo-selection-status" multiple disabled>
+                  <p id="photo-selection-status" class="muted" role="status" aria-live="polite"></p>
+                  <p class="muted">JPG, PNG, or WebP; maximum 10 MB per photo. Photos are stored privately when checkout starts. After a confirmed test payment, configured order notifications email your original photos and order details to Mini3DCreations. Use sample photos for testing.</p>
+                  <ul id="photo-list" class="photo-list"></ul>
+                  <p id="photo-upload-status" class="muted" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+              <div id="digital-file-info" class="notice" hidden><h3>Digital download — available soon</h3><p>This is an STL in a ZIP file, not a printed figurine. Purchasing will be enabled once the download is ready. You will not be charged for an unavailable file.</p></div>
+              <div id="shipping-fields" class="shipping-fields"><label>Destination ZIP code<input id="shipping-zip" name="shipping-zip" class="field" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="5-digit ZIP code" required></label><p class="muted">Ships from 65336. US domestic shipping only; packaging fit and shipping eligibility still need final verification.</p></div>
+            </fieldset>
+          </form>
+          <aside class="panel summary-panel" aria-labelledby="summary-heading">
+            <h3 id="summary-heading">Order summary</h3>
+            <p id="summary" class="summary-details"></p>
+            <dl class="totals"><div><dt>Items subtotal</dt><dd id="subtotal">$@@PRICE@@</dd></div><div><dt>Shipping and handling</dt><dd id="shipping">$10.00</dd></div><div class="grand-total"><dt>Sandbox total</dt><dd id="total">$@@TOTAL@@ USD</dd></div></dl>
+            <p class="muted">Sales tax is not calculated in Sandbox. Tax requirements must be verified before live sales.</p>
+            <div class="checkout-area"><h4>Sandbox test checkout</h4><p class="muted">Test accounts only. Real payments are disabled.</p><p id="checkout-mode" class="muted">Loading checkout settings…</p><div id="paypal-sandbox-button"></div><p id="paypal-sandbox-status" role="status" aria-live="polite">Loading PayPal Sandbox…</p><button id="retry-test-record" type="button" class="button" hidden>Retry test confirmation</button></div>
+            <div id="sandbox-receipt" class="receipt" hidden><h4>Sandbox test receipt</h4><pre id="sandbox-receipt-text" tabindex="0"></pre><button id="copy-test-receipt" type="button" class="button">Copy Receipt</button><p id="copy-status" class="muted" role="status"></p></div>
+            <p id="order-email-status" class="muted" role="status" aria-live="polite"></p>
+            <button id="retry-order-email" type="button" class="button" hidden>Retry order email</button>
+          </aside>
+        </div>
+      </div>
+    </section>
