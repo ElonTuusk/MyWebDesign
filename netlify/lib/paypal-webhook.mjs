@@ -5,6 +5,23 @@ const reply = (status = 204) => new Response(null, { status, headers: { 'Cache-C
 
 export function createPayPalWebhook({ allowed, webhookId, getStore, paypal, notify, now }) {
   return async request => {
+    const url = new URL(request.url);
+    if (request.method === 'GET' && url.searchParams.get('action') === 'readiness') {
+      const report = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
+      if (!allowed(request) || !webhookId) return report({ configured: false, subscriptionMatches: false }, 503);
+      try {
+        const details = await paypal.getWebhook(webhookId);
+        const checks = {
+          idMatches: details?.id === webhookId,
+          urlMatches: details?.url === `${url.origin}${url.pathname}`,
+          eventEnabled: Array.isArray(details?.event_types) && details.event_types.some(event =>
+            ['PAYMENT.CAPTURE.COMPLETED', '*'].includes(event.name)),
+        };
+        // Only booleans leave the server. This does not send an event, capture a
+        // payment, access an order, or expose the configured ID/credentials.
+        return report({ configured: true, subscriptionMatches: Object.values(checks).every(Boolean), ...checks });
+      } catch { return report({ configured: true, subscriptionMatches: false, reason: 'PAYPAL_LOOKUP_FAILED' }, 503); }
+    }
     if (request.method !== 'POST') return reply(405);
     if (!allowed(request) || !webhookId) return reply(503);
     if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') return reply(415);

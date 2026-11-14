@@ -22,6 +22,10 @@ Use the same **Sandbox REST app** that supplied the existing checkout credential
 
 Save its webhook ID as `PAYPAL_SANDBOX_WEBHOOK_ID` in Netlify's **Deploy Previews** context, then redeploy. This is a webhook ID, not a new client secret. Do not change existing payment credentials. The listener returns 503 while this setting is absent. Configuration is not complete until an actual Sandbox event verifies and reconciles successfully; PayPal's mock simulator does not support this postback-verification method.
 
+The earlier setup instruction used `PAYPAL_WEBHOOK_ID`. The guarded Sandbox listener accepts that name as a fallback so the owner does not need to re-enter an already saved value; `PAYPAL_SANDBOX_WEBHOOK_ID` takes precedence. This fallback cannot activate production processing. A future live listener must use a separate live webhook setting.
+
+After redeployment, `GET /.netlify/functions/paypal-webhook?action=readiness` uses the existing Sandbox app credentials to check that PayPal recognizes the configured ID, its callback URL matches this listener, and its subscription includes `PAYMENT.CAPTURE.COMPLETED`. The response contains booleans only, not IDs or credentials, and sends no payment/event/email. Passing this check validates subscription setup, not event delivery.
+
 ## Owner-only recovery
 
 Netlify → the preview deploy's **Functions → order-recovery → Run now** invokes recovery without a customer tab. It logs counts only. It does not expose an unauthenticated retry URL or list customer data in logs. No separate admin password is needed.

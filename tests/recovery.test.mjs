@@ -5,6 +5,7 @@ import { enqueueRecovery, runOrderRecovery } from '../netlify/lib/order-recovery
 import { createOrderNotifier } from '../netlify/lib/order-email.mjs';
 import { createPayPalWebhook } from '../netlify/lib/paypal-webhook.mjs';
 import { recoveryRuntime } from '../netlify/lib/recovery-runtime.mjs';
+import webhookHandler from '../netlify/functions/paypal-webhook.mjs';
 import { receiptText } from '../assets/shop-catalog.js';
 import { kit, checkoutId, token, orderID, approvedOrder } from './fixtures.mjs';
 
@@ -250,4 +251,54 @@ test('PayPal postback preserves the original webhook JSON and uses the configure
   assert.equal(recoveryRuntime({ PAYPAL_ENVIRONMENT: 'live', PAYPAL_SANDBOX_CLIENT_SECRET: 'TEST_ONLY' }), null);
   assert.equal(recoveryRuntime({ CONTEXT: 'deploy-preview', PAYPAL_SANDBOX_CLIENT_SECRET: 'TEST_ONLY' }, { deploy: { context: 'production' } }), null);
   assert.ok(recoveryRuntime({ PAYPAL_SANDBOX_CLIENT_SECRET: 'TEST_ONLY' }, { deploy: { context: 'deploy-preview' } }));
+});
+
+test('the saved generic webhook setting works only within the trusted Sandbox runtime', async () => {
+  const keys = ['PAYPAL_WEBHOOK_ID', 'PAYPAL_SANDBOX_WEBHOOK_ID', 'PAYPAL_SANDBOX_CLIENT_SECRET', 'PAYPAL_ENVIRONMENT'];
+  const saved = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  try {
+    process.env.PAYPAL_WEBHOOK_ID = '  TEST_WEBHOOK_ID  ';
+    delete process.env.PAYPAL_SANDBOX_WEBHOOK_ID;
+    process.env.PAYPAL_SANDBOX_CLIENT_SECRET = 'TEST_ONLY';
+    process.env.PAYPAL_ENVIRONMENT = 'sandbox';
+    const request = () => new Request(`${origin}/.netlify/functions/paypal-webhook`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+    });
+    // Configured listener rejects unsigned input before touching providers/storage.
+    assert.equal((await webhookHandler(request(), { deploy: { context: 'deploy-preview' } })).status, 400);
+    assert.equal((await webhookHandler(request(), { deploy: { context: 'production' } })).status, 503);
+    delete process.env.PAYPAL_WEBHOOK_ID;
+    assert.equal((await webhookHandler(request(), { deploy: { context: 'deploy-preview' } })).status, 503);
+  } finally {
+    for (const key of keys) {
+      if (saved[key] === undefined) delete process.env[key];
+      else process.env[key] = saved[key];
+    }
+  }
+});
+
+test('readiness verifies the provider subscription without exposing settings or sending anything', async () => {
+  const endpoint = `${origin}/.netlify/functions/paypal-webhook`;
+  for (const [change, matches] of [
+    [{}, true], [{ url: 'https://wrong.example/listener' }, false],
+    [{ event_types: [{ name: 'PAYMENT.SALE.COMPLETED' }] }, false], [{ id: 'OTHER_WEBHOOK' }, false],
+  ]) {
+    const handler = createPayPalWebhook({
+      allowed: () => true, webhookId: 'PRIVATE_WEBHOOK_ID',
+      getStore: () => assert.fail('Readiness must not access orders'),
+      notify: () => assert.fail('Readiness must not send email'),
+      paypal: { getWebhook: async id => {
+        assert.equal(id, 'PRIVATE_WEBHOOK_ID');
+        return { id, url: endpoint, event_types: [{ name: 'PAYMENT.CAPTURE.COMPLETED' }], ...change };
+      } },
+    });
+    const response = await handler(new Request(`${endpoint}?action=readiness`));
+    const data = await response.json();
+    assert.equal(data.configured, true); assert.equal(data.subscriptionMatches, matches);
+    assert.doesNotMatch(JSON.stringify(data), /PRIVATE|wrong.example/);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+  }
+  const blocked = createPayPalWebhook({ allowed: () => false, webhookId: 'PRIVATE_WEBHOOK_ID',
+    paypal: { getWebhook: () => assert.fail('Wrong environment must not contact PayPal') } });
+  assert.equal((await blocked(new Request(`${endpoint}?action=readiness`))).status, 503);
 });

@@ -63,6 +63,7 @@ export function paypalClient({ secret, fetch: request = fetch, timeoutMs = 12000
   return {
     create: (selection, id) => call('/v2/checkout/orders', { method: 'POST', requestId: id, body: paypalOrder(selection, id) }),
     get: id => call(`/v2/checkout/orders/${id}`),
+    getWebhook: id => call(`/v1/notifications/webhooks/${encodeURIComponent(id)}`),
     capture: (id, checkoutId) => call(`/v2/checkout/orders/${id}/capture`, {
       method: 'POST', requestId: hash(`capture:${checkoutId}`).slice(0, 32), body: {},
     }),
